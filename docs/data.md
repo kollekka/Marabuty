@@ -39,3 +39,24 @@ Decyzja zespołu (dane/backend, uzgodniona z A): jako drugie, niezależne źród
 ### Odrzucony 1: Apify — „Otomoto.pl Scraper” (automation-lab)
 
 - **Powód:** Płatny model pay-per-event (od ok. 0,60 USD za 1000 ofert) oraz wymagany token i konto Apify; darmowy kredyt wystarcza tylko na test, a przy większym zbiorze koszt rośnie. Dane są dobrej jakości, ale dla projektu dydaktycznego koszt i zależność od zewnętrznej platformy są nieuzasadnione. Dodatkowo obowiązują warunki Apify i Otomoto, więc ryzyko zgodności jest wyższe niż przy własnym skrypcie.
+
+## Plan pozyskania danych
+
+| Element | Ustalenie zespołu |
+|---|---|
+| Źródło | „Poland cars for sale dataset”; lokalny plik `data/Car_sale_ads.csv`. |
+| Właściciel | Do ustalenia na podstawie dokumentacji źródła. |
+| Zakres | Ogłoszenia sprzedaży samochodów z cechami pojazdu i ceną ofertową; pełny zakres i pokrycie rynku do potwierdzenia u właściciela zbioru. |
+| Okres i częstotliwość | W próbce daty publikacji obejmują 23/04/2021–04/05/2021; pełny zakres dat do sprawdzenia. Zbiór traktujemy jako jednorazową migawkę, częstotliwość jego aktualizacji jest do ustalenia. |
+| Jednostka obserwacji | Pojedynczy wiersz odpowiada ogłoszeniu samochodu; unikalność ogłoszeń wymaga sprawdzenia. |
+| Dobór i liczebność | Plik zawiera 208 304 rekordy. Metoda doboru rekordów w zbiorze źródłowym jest do ustalenia. `data/raw/sample.csv` to pierwsze 25 rekordów, wydzielone wyłącznie jako próbka techniczna, niereprezentatywna. |
+| Sposób pobrania | Plik jest dostępny w repozytorium. Sposób i narzędzie pierwotnego pobrania są do ustalenia; ponownego pobrania nie wykonano. |
+| Data pobrania | Do ustalenia; nie została zapisana w repozytorium ani w metadanych pliku. |
+| Adres źródłowy | Do ustalenia; obecnie znana jest tylko ścieżka lokalna `data/Car_sale_ads.csv`. |
+| Parametry zapytania | Do ustalenia. Dla lokalnego pliku CSV nie ma zapisanych parametrów zapytania ani eksportu. |
+| Limity, koszt i uprawnienia | Do ustalenia w warunkach źródła; plik lokalny nie udostępnia API ani znanych limitów zapytań. |
+| Licencja i zasady publikacji | Do ustalenia w dokumentacji źródła przed dalszym udostępnianiem danych. Licencji skryptu alternatywnego nie należy utożsamiać z licencją zbioru danych. |
+| Osoba odpowiedzialna | Adrian Świeca — dane i backend. |
+| Plan awaryjny | Rozważony skrypt `simonloach/car-scraper` do eksportu publicznych ofert Otomoto.pl; przed użyciem trzeba wykonać próbę pobrania i sprawdzić regulamin serwisu oraz ograniczenia scrapingu (szczegóły w sekcji „Warianty pozyskania danych — decyzja”). |
+
+Źródłem głównym jest plik CSV, a nie API, dlatego nie dodano kolekcji Postman/Bruno ani przykładowej odpowiedzi API. Jeśli zespół wybierze źródło API, należy dodać odpowiednie testy struktury odpowiedzi bez tokenów i sekretów.
