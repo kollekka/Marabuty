@@ -1,0 +1,15 @@
+Plik: data\processed\sample-clean.csv
+Rekordy: 25
+Kolumny: 27
+
+[PASS] Wymagane kolumny — 25 kolumn obecnych
+[PASS] Liczba rekordów — 25 rekordów (minimum 1)
+[PASS] Typy kolumn — 27 kolumn zgodnych z typem logicznym
+[PASS] ID — 25 niepustych i unikalnych wartości
+[PASS] Duplikaty ogłoszeń — 0 duplikatów
+[PASS] Zakresy liczb — sprawdzono 9 kolumn; brak naruszeń
+[PASS] Kategorie — sprawdzono 4 kolumn; wszystkie wartości dozwolone
+[PASS] Daty — sprawdzono 2 kolumn; brak błędnych dat
+
+Wynik: PASS (8/8)
+EXIT_CODE=0

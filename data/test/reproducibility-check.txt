@@ -1,0 +1,27 @@
+Test powtarzalności przetwarzania danych
+
+Polecenie:
+python scripts/prepare_data.py data/raw/sample.csv data/processed/sample-clean.csv
+
+Kopia wyniku przed usunięciem:
+data/test/sample-clean-before-repro.csv
+
+Ponownie utworzony wynik:
+data/processed/sample-clean.csv
+
+Porównanie:
+- rekordy: 25 przed, 25 po — zgodne,
+- kolumny: 27 przed, 27 po — zgodne,
+- SHA256 przed: BE5ACCF1C82EDC296B2FB0B49DFD6046F796CDDBE8DBAA5C51BD634647E9F907,
+- SHA256 po: BE5ACCF1C82EDC296B2FB0B49DFD6046F796CDDBE8DBAA5C51BD634647E9F907,
+- hashe identyczne: TAK; wartości w plikach są identyczne,
+- SHA256 data/raw/sample.csv przed i po: B49582AAD7354EC18679000887C5D7FBFD073F1F1612A93253240C0A02CD02AB,
+- data/raw/sample.csv nie został zmieniony.
+
+Kontrola jakości odtworzonego pliku:
+- wynik: PASS (8/8),
+- EXIT_CODE=0.
+
+Pliki z logami:
+- data/test/prepare-data-repro.log,
+- data/test/quality-check-repro.txt.

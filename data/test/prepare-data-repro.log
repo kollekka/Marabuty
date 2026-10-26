@@ -1,0 +1,45 @@
+Wejście:  E:\Marabuty\data\raw\sample.csv
+Wyjście:  E:\Marabuty\data\processed\sample-clean.csv
+Rekordy przed: 25
+Rekordy po:    25
+Usunięte duplikaty: 0
+Rok odniesienia: 2021
+
+Braki w kolumnach źródłowych (przed -> po):
+  Index: 0 -> 0
+  Price: 0 -> 0
+  Currency: 0 -> 0
+  Condition: 0 -> 0
+  Vehicle_brand: 0 -> 0
+  Vehicle_model: 0 -> 0
+  Vehicle_version: 24 -> 24
+  Vehicle_generation: 25 -> 25
+  Production_year: 0 -> 0
+  Mileage_km: 0 -> 0
+  Power_HP: 0 -> 0
+  Displacement_cm3: 0 -> 0
+  Fuel_type: 0 -> 0
+  CO2_emissions: 20 -> 20
+  Drive: 3 -> 3
+  Transmission: 0 -> 0
+  Type: 0 -> 0
+  Doors_number: 0 -> 0
+  Colour: 0 -> 0
+  Origin_country: 13 -> 13
+  First_owner: 18 -> 18
+  First_registration_date: 17 -> 17
+  Offer_publication_date: 0 -> 0
+  Offer_location: 0 -> 0
+  Features: 0 -> 0
+
+Wartości niemożliwe oznaczone jako braki:
+  Price: 0
+  Mileage_km: 0
+  Power_HP: 0
+  Displacement_cm3: 0
+  Production_year: 0
+  Doors_number: 0
+  CO2_emissions: 0
+
+Kolumny po przetworzeniu (27): Index, Price, Currency, Condition, Vehicle_brand, Vehicle_model, Vehicle_version, Vehicle_generation, Production_year, Mileage_km, Power_HP, Displacement_cm3, Fuel_type, CO2_emissions, Drive, Transmission, Type, Doors_number, Colour, Origin_country, First_owner, First_registration_date, Offer_publication_date, Offer_location, Features, Displacement_l, Vehicle_age
+EXIT_CODE=0
