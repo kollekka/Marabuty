@@ -1,0 +1,3 @@
+# Minimalne zależności do scripts/prepare_data.py i scripts/quality_checks.py
+pandas>=2.0
+numpy>=1.22
