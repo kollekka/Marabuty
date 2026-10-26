@@ -16,6 +16,7 @@ Ceny podobnych samochodów różnią się, a kupujący i sprzedający często mu
 
 - [Opis problemu](docs/problem.md)
 - [Ocena danych i źródła](docs/data.md)
+- [Próbka danych (25 rekordów)](data/raw/sample.csv)
 
 ## Uruchomienie
 

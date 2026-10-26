@@ -23,7 +23,7 @@
 
 ## Próbka
 
-`data/sample.csv` zawiera pierwsze 25 rekordów danych z `data/Car_sale_ads.csv` (indeksy 0–24), wraz z nagłówkiem. Jest to wycinek techniczny, a nie próba losowa ani reprezentatywna; nie należy na jego podstawie uogólniać rozkładów w całym zbiorze. W tych 25 rekordach nie znaleziono powtórzonych kompletnych wierszy.
+`data/raw/sample.csv` zawiera pierwsze 25 rekordów danych z `data/Car_sale_ads.csv` (indeksy 0–24), wraz z nagłówkiem. Jest to wycinek techniczny, a nie próba losowa ani reprezentatywna; nie należy na jego podstawie uogólniać rozkładów w całym zbiorze. W tych 25 rekordach nie znaleziono powtórzonych kompletnych wierszy.
 
 ## Warianty pozyskania danych — decyzja
 
