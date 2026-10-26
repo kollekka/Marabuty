@@ -8,9 +8,9 @@ Ceny podobnych samochodów różnią się, a kupujący i sprzedający często mu
 
 ## Zespół
 
-- Kacper Stopa — GitHub: `@do-uzupełnienia`
-- Adrian Świeca — GitHub: `@do-uzupełnienia`
-- Bartłomiej Taper — GitHub: `@do-uzupełnienia`
+- Kacper Stopa 
+- Adrian Świeca
+- Bartłomiej Taper 
 
 ## Dokumentacja
 
