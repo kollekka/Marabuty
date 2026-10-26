@@ -1,0 +1,25 @@
+Plik testowy: data/test/sample-clean-bad.csv
+Źródło: kopia data/processed/sample-clean.csv; data/raw/ nie zmieniano.
+
+Celowe błędy w drugim rekordzie danych:
+- Index = 0 (powtórzenie ID z pierwszego rekordu),
+- Mileage_km = -100,
+- Condition = Damaged.
+
+Oczekiwany wynik kontroli:
+
+Plik: data\test\sample-clean-bad.csv
+Rekordy: 25
+Kolumny: 27
+
+[PASS] Wymagane kolumny — 25 kolumn obecnych
+[PASS] Liczba rekordów — 25 rekordów (oczekiwano 25)
+[PASS] Typy kolumn — 27 kolumn zgodnych z typem logicznym
+[FAIL] ID — wiersze z powtórzonym ID: 2
+[PASS] Duplikaty ogłoszeń — 0 duplikatów
+[FAIL] Zakresy liczb — Mileage_km: wartości poza zakresem: 1 (>= 0)
+[FAIL] Kategorie — Condition: nieznane wartości: 'Damaged'
+[PASS] Daty — sprawdzono 2 kolumn; brak błędnych dat
+
+Wynik: FAIL (5/8)
+EXIT_CODE=1
