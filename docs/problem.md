@@ -94,3 +94,25 @@ Niefunkcjonalne:
 - walidacja danych wejściowych w formularzu i API,
 - testy `pytest` przechodzą; dokumentacja API w Swagger/OpenAPI,
 - README ze sposobem uruchomienia całości.
+
+### Tabela wymagań
+
+| ID | Wymaganie | Kryterium sprawdzenia | Źródło lub uzasadnienie | Status | Osoba                                |
+|---|---|---|---|---|--------------------------------------|
+| W-01 | Użytkownik otrzymuje orientacyjną cenę pojazdu w PLN wraz z przedziałem niepewności na podstawie podanych parametrów. | Dla poprawnych danych użytkownik widzi prognozę i przedział; wynik jest jasno opisany jako orientacyjny. | Karta, pkt 4 i 6; potrzeba z pkt 2 | potwierdzone | Frontend — Bartłomiej Taper |
+| W-02 | Użytkownik widzi, czy oferta jest poniżej, w okolicach, czy powyżej ceny rynkowej. | Interfejs pokazuje jedną z trzech ocen; sposób i progi oceny są jawnie opisane. | Karta, pkt 4 | potwierdzone | Frontend — Bartłomiej Taper |
+| W-03 | Prognoza jest wiarygodniejsza niż proste porównanie z medianą lub średnią ceny dla marki i modelu. | MAE, RMSE i R² na zbiorze testowym są lepsze niż dla punktu odniesienia. | Karta, pkt 7.1 | potwierdzone | Model — Kacper Stopa |
+| W-04 | Błąd względny prognozy nie przekracza ok. 15%. | MAPE na zbiorze testowym wynosi ≤ 15%; próg zostaje potwierdzony po EDA. | Karta, pkt 7.2 | założenie | Model — Kacper Stopa |
+| W-05 | Błędne lub niekompletne dane nie prowadzą do prognozy; użytkownik otrzymuje czytelny komunikat. | Formularz blokuje wysłanie błędnych danych, a API zwraca błąd 422; przypadki błędne są pokryte testami. | Karta, pkt 7.4 | potwierdzone | Dane/backend + Frontend — Adrian Świeca |
+| W-06 | Użytkownik rozumie, które cechy najmocniej wpływają na cenę. | Widoczny jest ranking lub wykres ważności cech wraz z opisem metody i ograniczeń. | Karta, pkt 4 i 6 | potwierdzone | Model + Frontend — Adrian Świeca |
+
+## Potrzeby informacyjne
+
+| Informacja | Do czego | Minimalny zakres | Format/częstotliwość | Czy dostępna |
+|---|---|---|---|---|
+| Cena ofertowa pojazdu (`Price`) | Zmienna objaśniana; punkt odniesienia dla prognozy | Cena w PLN dla każdego ogłoszenia | CSV; jednorazowa migawka | tak |
+| Parametry pojazdu: marka, model, rok, przebieg, moc, pojemność, paliwo, skrzynia, nadwozie | Predyktory modelu | Pola wymienione w karcie; pełny zestaw po EDA | CSV; jednorazowo | tak |
+| Lokalizacja oferty (`Offer_location`) | Ocena różnic regionalnych | Ujednolicona lokalizacja, np. miasto lub województwo | CSV; jednorazowo | częściowo — format i zakres do ujednolicenia |
+| Data publikacji oferty | Ocena aktualności i ewentualny podział czasowy | Data dla większości ogłoszeń oraz zakres dat | CSV; jednorazowo | częściowo — w próbce IV–V 2021, pełny zakres do sprawdzenia |
+| Licencja i źródło zbioru | Legalność wykorzystania i opis ograniczeń | Potwierdzona licencja, właściciel, link i data pobrania | Dokumentacja/metadane; jednorazowo | nie |
+| Ceny transakcyjne | Weryfikacja, czy cena ofertowa odpowiada rzeczywistej | Cena transakcyjna lub dane porównawcze | Poza zbiorem; brak | nie |
