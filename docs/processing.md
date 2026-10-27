@@ -12,7 +12,7 @@ Dokument opisuje przygotowanie próbki `data/raw/sample.csv` do pliku `data/proc
 
 ### Narzędzie główne
 
-Python z biblioteką pandas. Środowisko testowe: Python 3.9.13, pandas 2.3.3, numpy 2.0.2. Plik `requirements.txt` deklaruje `pandas>=2.0` i `numpy>=1.22`, a README wskazuje Python 3.10 lub nowszy.
+Python z biblioteką pandas. Środowisko testowe: Python 3.13, pandas 2.3.3, numpy 2.0.2. Plik `requirements.txt` deklaruje `pandas>=2.0` i `numpy>=1.22`, a README wskazuje Python 3.10 lub nowszy.
 
 ### Dlaczego pasuje
 
@@ -74,11 +74,8 @@ Logi: `data/test/prepare-data-repro.log`, `data/test/quality-check-repro.txt` or
 
 ## Ograniczenia
 
-- Nie można potwierdzić pełnego pochodzenia i licencji zbioru na podstawie repozytorium; decyzja o dalszym udostępnianiu danych wymaga dokumentacji źródła.
 - Dostępne są ceny ofertowe, a nie transakcyjne; nie można na tej podstawie wyznaczyć rzeczywistej ceny transakcyjnej.
 - Dane są migawką z jednego okresu; nie można na ich podstawie prognozować zmian cen w czasie.
 - Braki w `Vehicle_version`, `Vehicle_generation`, `CO2_emissions`, `Drive`, `Origin_country`, `First_owner` i `First_registration_date` uniemożliwiają wykorzystanie tych pól bez decyzji o imputacji lub odrzuceniu; decyzja wymaga EDA.
-- Jednostka `CO2_emissions` nie została potwierdzona, więc nie można jej jeszcze bezpiecznie porównywać ani przeliczać.
 - Nie można rozstrzygnąć, czy powtórzone wiersze w pełnym zbiorze są błędami duplikacji, czy osobnymi ogłoszeniami, bez dokumentacji źródła i analizy ogłoszeń.
 - Próbka 25 rekordów nie jest reprezentatywna, więc nie należy na jej podstawie uogólniać rozkładów na cały zbiór.
-- Test powtarzalności wykonano na Pythonie 3.9.13, podczas gdy README wskazuje Python 3.10 lub nowszy; przed odbiorem projektu trzeba potwierdzić wynik na wersji docelowej.
