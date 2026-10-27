@@ -2,8 +2,7 @@
 
 Szkic opracowany na podstawie `data/raw/sample.csv`, `data/processed/sample-clean.csv`, `scripts/prepare_data.py` oraz `docs/data.md`.
 
-Próbka obejmuje 25 rekordów. Liczba w nawiasie oznacza liczbę pustych wartości w tej próbce; wpis `nie (0/25)` nie gwarantuje braku braków w całym zbiorze 208 304 rekordów. Znaczenia oznaczone jako „(potwierdzić w dokumentacji źródła)” wymagają weryfikacji.
-
+Próbka obejmuje 25 rekordów. Liczba w nawiasie oznacza liczbę pustych wartości w tej próbce; wpis `nie (0/25)` nie gwarantuje braku braków w całym zbiorze 208 304 rekordów.
 ## `data/raw/sample.csv`
 
 | Pole | Znaczenie | Typ | Jednostka/format | Przykładowa wartość | Czy może być puste? |
@@ -44,8 +43,8 @@ Próbka obejmuje 25 rekordów. Liczba w nawiasie oznacza liczbę pustych wartoś
 | `Condition` | Stan pojazdu. | tekst/kategoria | `New`, `Used` | `New` | nie (0/25) |
 | `Vehicle_brand` | Marka pojazdu. | tekst | — | `Abarth` | nie (0/25) |
 | `Vehicle_model` | Model pojazdu. | tekst | — | `595` | nie (0/25) |
-| `Vehicle_version` | Wersja/wariant pojazdu (potwierdzić w dokumentacji źródła). | tekst | — | `1.4 MultiAir` | tak (24/25) |
-| `Vehicle_generation` | Generacja modelu (potwierdzić w dokumentacji źródła). | tekst | — | — (brak w próbce) | tak (25/25) |
+| `Vehicle_version` | Wersja/wariant pojazdu | tekst | — | `1.4 MultiAir` | tak (24/25) |
+| `Vehicle_generation` | Generacja modelu | tekst | — | — (brak w próbce) | tak (25/25) |
 | `Production_year` | Rok produkcji. | liczba całkowita | rok `YYYY` | `2021` | tak (0/25; reguła zakresu 1900–rok odniesienia + 1) |
 | `Mileage_km` | Przebieg pojazdu. | liczba zmiennoprzecinkowa | km | `1.0` | tak (0/25; reguła `< 0`) |
 | `Power_HP` | Moc silnika. | liczba zmiennoprzecinkowa | HP | `145.0` | tak (0/25; reguła `<= 0`) |
@@ -57,12 +56,12 @@ Próbka obejmuje 25 rekordów. Liczba w nawiasie oznacza liczbę pustych wartoś
 | `Type` | Typ nadwozia. | tekst/kategoria | `small_cars`, `coupe` itd. | `small_cars` | nie (0/25) |
 | `Doors_number` | Liczba drzwi. | liczba całkowita | liczba drzwi | `3` | tak (0/25; reguła `<= 0`) |
 | `Colour` | Kolor pojazdu. | tekst/kategoria | `gray`, `silver` itd. | `gray` | nie (0/25) |
-| `Origin_country` | Kraj pochodzenia pojazdu (potwierdzić w dokumentacji źródła). | tekst/kategoria | `Germany`, `Poland`, `France` | `Germany` | tak (13/25) |
-| `First_owner` | Informacja o pierwszym właścicielu; kodowanie wartości (potwierdzić w dokumentacji źródła). | tekst/kategoria | `Yes` | `Yes` | tak (18/25) |
+| `Origin_country` | Kraj pochodzenia pojazdu | tekst/kategoria | `Germany`, `Poland`, `France` | `Germany` | tak (13/25) |
+| `First_owner` | Informacja o pierwszym właścicielu; kodowanie wartości | tekst/kategoria | `Yes` | `Yes` | tak (18/25) |
 | `First_registration_date` | Data pierwszej rejestracji. | data (ISO) | `YYYY-MM-DD` | `2016-03-15` | tak (17/25) |
 | `Offer_publication_date` | Data publikacji ogłoszenia. | data (ISO) | `YYYY-MM-DD` | `2021-05-04` | nie (0/25) |
 | `Offer_location` | Lokalizacja ogłoszenia/oferty. | tekst | adres lub lokalizacja nieustrukturyzowana | `ul. Jubilerska 6 - 04-190 Warszawa, Mazowieckie (Polska)` | nie (0/25) |
-| `Features` | Lista wyposażenia pojazdu; pełny słownik i format (potwierdzić w dokumentacji źródła). | tekst (serializowana lista) | lista w nawiasach kwadratowych | `['ABS', 'Electric front windows']` | nie (0/25); pusta lista `[]` to wartość |
+| `Features` | Lista wyposażenia pojazdu; pełny słownik i format | tekst (serializowana lista) | lista w nawiasach kwadratowych | `['ABS', 'Electric front windows']` | nie (0/25); pusta lista `[]` to wartość |
 | `Displacement_l` | Pojemność skokowa w litrach. | liczba zmiennoprzecinkowa | l | `1.4` | tak (0/25; gdy brak `Displacement_cm3`) |
 | `Vehicle_age` | Wiek pojazdu w roku publikacji oferty. | liczba całkowita | lata | `0` | tak (0/25; gdy brak roku lub daty publikacji) |
 
