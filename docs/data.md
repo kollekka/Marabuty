@@ -4,8 +4,8 @@
 
 | Element | Wynik sprawdzenia |
 |---|---|
-| Źródło i właściciel | „Poland cars for sale dataset” (nazwa przekazana w opisie projektu); właściciel lub publikujący do sprawdzenia w dokumentacji źródła. |
-| Link | Do sprawdzenia; adres źródłowy nie został zapisany w repozytorium. |
+| Źródło i właściciel | „Poland cars for sale dataset” - Bartosz Pieniak |
+| Link | https://www.kaggle.com/datasets/bartoszpieniak/poland-cars-for-sale-dataset |
 | Wymaganie dostępu | Plik CSV jest dostępny lokalnie w `data/Car_sale_ads.csv`; wymagania pobrania i ewentualnej atrybucji do sprawdzenia. |
 | Data pobrania | Do sprawdzenia; nieustalona na podstawie pliku. |
 | Format | CSV, 25 kolumn, przecinek jako separator; polskie znaki są poprawnie odczytywane. |
