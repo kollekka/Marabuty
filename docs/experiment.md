@@ -52,6 +52,75 @@ Metryki na zbiorze testowym:
 
 Nie stroimy modelu ani baseline na teście. Jeśli w przyszłości pojawi się strojenie hiperparametrów, odbywa się ono wyłącznie w walidacji krzyżowej na train.
 
+## Weryfikacja ręczna
+
+Wartości oczekiwane policzono niezależnie od kodu i wyników Osoby B. Obliczenia wykonano w osobnym `git worktree` na commicie `bfbb9b6`, który zawiera kontrakt i `data/processed/sample-clean.csv`, ale nie zawiera jeszcze `results/lab4/`. Katalog roboczy nie miał dostępu do plików wynikowych. Użyto Pythona 3.9.13, pandas 2.3.3 i scikit-learn 1.6.1.
+
+Podział jest zgodny z kontraktem: `train_test_split(test_size=0.2, random_state=42)` daje 20 wierszy train i 5 wierszy test o indeksach 8, 16, 0, 23 i 11.
+
+### Baseline
+
+Dla przypadku `row_index=8` (Peugeot 2008, 2013, 140 315 km, cena 24 900 PLN) stosujemy wzór:
+
+```text
+ŷ = mediana_train(price_pln | make, model)
+jeśli brak pary: ŷ = mediana_train(price_pln | make)
+jeśli brak marki: ŷ = mediana_train(price_pln)
+```
+
+Kroki:
+
+1. Pary `Peugeot`+`2008` nie ma w train.
+2. Marki `Peugeot` nie ma w train.
+3. Globalna mediana `price_pln` w train wynosi 51 849,50 PLN.
+4. Prognoza baseline: 51 849,50 PLN.
+5. Błąd bezwzględny: |24 900,00 − 51 849,50| = 26 949,50 PLN.
+6. APE: 26 949,50 / 24 900,00 × 100% = 108,23%.
+
+### Ridge
+
+Model jest uczony na `log1p(price_pln)`, a prognozę wracamy wzorem:
+
+```text
+z = w0 + Σ wj·xj
+ŷ = expm1(z)
+```
+
+Po imputacji, one-hot encoding i grupowaniu rzadkich poziomów przypadek ma 39 cech. Wyraz wolny wynosi −265,5810068059, a suma iloczynów cech i współczynników daje `z = 9,2995532916`. Po odwróceniu logarytmu:
+
+```text
+ŷ = expm1(9,2995532916) = 10 932,13 PLN
+```
+
+Błąd bezwzględny: |24 900,00 − 10 932,13| = 13 967,87 PLN. APE: 13 967,87 / 24 900,00 × 100% = 56,10%.
+
+Największy wkład w `z` ma `num__year` (+274,821320), a następnie `num__engine_power_km` (+0,448968). Pozostałe cechy mają mniejsze wkłady.
+
+### Miara zbiorcza
+
+MAE liczymy ze wzoru:
+
+```text
+MAE = (1/n) · Σ |yi − ŷi|
+```
+
+Dla 5 przypadków testowych suma błędów bezwzględnych baseline wynosi 928 499,50 PLN, więc MAE = 928 499,50 / 5 = 185 699,90 PLN. Dla Ridge suma błędów wynosi 197 653,12 PLN, więc MAE = 197 653,12 / 5 = 39 530,62 PLN.
+
+### Wartości oczekiwane
+
+| Element | Wartość oczekiwana |
+|---|---:|
+| Baseline — prognoza dla `row_index=8` | 51 849,50 PLN |
+| Baseline — błąd bezwzględny | 26 949,50 PLN |
+| Baseline — APE | 108,23% |
+| Ridge — prognoza dla `row_index=8` | 10 932,13 PLN |
+| Ridge — błąd bezwzględny | 13 967,87 PLN |
+| Ridge — APE | 56,10% |
+| Baseline — MAE na 5 testach | 185 699,90 PLN |
+| Ridge — MAE na 5 testach | 39 530,62 PLN |
+
+Wartości są zaokrąglone do 2 miejsc po przecinku. Służą jako punkt odniesienia w sekcji „Porównanie i interpretacja”; nie kopiowano ich z `results/lab4/`.
+
 ## Źródła literaturowe i uzasadnienie metody
 
 Wybór regresji log-liniowej wynika z charakteru zmiennej: cena jest ciągła, dodatnia i silnie skośna, a logarytm stabilizuje wariancję i ogranicza wpływ skrajnych cen. Regresja liniowa daje też interpretowalne współczynniki i jest naturalnym punktem wyjścia przed modelami drzewiastymi. Baseline mediany dla marki i modelu jest mocnym, prostym odniesieniem, bo w danych o samochodach marka i model silnie różnicują cenę.
