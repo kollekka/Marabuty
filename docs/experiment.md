@@ -147,6 +147,41 @@ Raport powinien zawierać tabelę z metrykami baseline i modelu dla obu podział
 
 Kryterium praktyczne to spełnienie R6: MAE i RMSE niższe oraz R² wyższe niż baseline, a MAPE ≤ 15%. Sama minimalna poprawa jednej metryki nie wystarcza do decyzji wdrożeniowej. Przy tak małej próbce raportujemy również bezwzględne wartości błędów, żeby nie ukrywać niepewności za samym rankingiem.
 
+## Porównanie i interpretacja
+
+Kontrola `scripts/check_results.py` przeszła 10 z 10 kontroli dla `results/lab4/` i 10 z 10 dla `results/lab4/sensitivity/`; kod wyjścia wyniósł 0. Pełny log znajduje się w `data/test/lab4-check-results.log`. Sekcja A4 potwierdziła wcześniej odtwarzalność plików, więc poniżej nie powtarzamy testu bajtowego.
+
+### Zgodność wartości oczekiwanych z wynikami
+
+| Element | C1 — wartość oczekiwana | B — wynik | Różnica |
+|---|---:|---:|---:|
+| Baseline — prognoza `row_index=8` | 51 849,50 PLN | 51 849,50 PLN | 0,00 PLN |
+| Ridge — prognoza `row_index=8` | 10 932,13 PLN | 10 932,13 PLN | 0,00 PLN |
+| Baseline — błąd `row_index=8` | 26 949,50 PLN | 26 949,50 PLN | 0,00 PLN |
+| Ridge — błąd `row_index=8` | 13 967,87 PLN | 13 967,87 PLN | 0,00 PLN |
+| Baseline — APE `row_index=8` | 108,23% | 108,23% | 0,00 p.p. |
+| Ridge — APE `row_index=8` | 56,10% | 56,10% | 0,00 p.p. |
+| Baseline — MAE | 185 699,90 PLN | 185 699,90 PLN | 0,00 PLN |
+| Ridge — MAE | 39 530,62 PLN | 39 530,62 PLN | 0,00 PLN |
+
+Różnice mieszczą się w tolerancji przyjętej dla zaokrągleń. Oznacza to, że niezależne obliczenie C1 i wynik skryptu B opisują tę samą procedurę.
+
+### Wyniki i kryterium R6
+
+| Podział | Metoda | MAE [PLN] | RMSE [PLN] | R² | MAPE [%] | Różnica MAE vs baseline |
+|---|---|---:|---:|---:|---:|---:|
+| 80/20 | baseline | 185 699,90 | 350 138,20 | −0,2127 | 149,84 | — |
+| 80/20 | ridge | 39 530,62 | 65 989,83 | 0,9569 | 33,35 | −146 169,28 (−78,71%) |
+| 70/30 | baseline | 135 692,44 | 280 966,13 | −0,1587 | 137,49 | — |
+| 70/30 | ridge | 20 386,01 | 30 384,92 | 0,9864 | 25,84 | −115 306,43 (−84,98%) |
+
+### Odpowiedzi na pytania interpretacyjne
+
+1. **Który wariant jest lepszy i o ile?** Ridge jest lepszy w obu podziałach. Przy 80/20 obniża MAE o 146 169,28 PLN, czyli o 78,71%, a przy 70/30 o 115 306,43 PLN, czyli o 84,98%. Ma też niższe RMSE i wyższe R² niż baseline.
+2. **Czy spełnia kryterium R6?** Tylko częściowo. MAE, RMSE i R² są lepsze od baseline w obu podziałach, ale MAPE wynosi 33,35% dla 80/20 i 25,84% dla 70/30, więc przekracza próg ok. 15%. R6 nie jest spełnione w zakresie MAPE.
+3. **Czy zmiana parametru zmienia wniosek?** Nie zmienia rankingu. Po przejściu z 80/20 na 70/30 Ridge nadal wygrywa, a MAPE nadal przekracza 15%. Wniosek kierunkowo się utrzymuje, choć zmienia się skala poprawy MAE.
+4. **Czego nie wolno wywnioskować?** Nie można twierdzić o przyczynowym wpływie cech na cenę, o wynikach dla całego rynku ani o cenach transakcyjnych. Przy 25 rekordach i 5–8 obserwacjach testowych nie ma podstaw do uogólniania na pełny zbiór 228 318 rekordów ani do twierdzenia, że próg MAPE zostanie osiągnięty poza tą próbką. Wynik baseline zależy od fallbacku median dla par i marek.
+
 ## Ograniczenia
 
 - Próba liczy 25 rekordów, a zbiór testowy 5 lub 8 obserwacji. Pojedynczy błąd mocno zmienia metryki, więc wynik jest orientacyjny.

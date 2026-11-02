@@ -1,0 +1,34 @@
+=== results\lab4 ===
+PASS  Pliki i wczytanie: comparison.csv (2 wiersze), observations.csv (5 wierszy)
+PASS  Kolumny comparison: zgodne z kontraktem
+PASS  Kolumny observations: zgodne z kontraktem
+PASS  Metody i wiersze: baseline: 1, ridge: 1
+PASS  Liczba przypadków: n_train=[20, 20], n_test=[5, 5], observations=5, oczekiwane łącznie=25
+PASS  Braki i unikalność: braki: 0; row_index i id unikalne
+PASS  Znaki i jednostki: ceny i prognozy > 0, błędy i procenty >= 0, R2 <= 1
+PASS  Arytmetyka błędów: maksymalna różnica 0.0041 (tolerancja 0.02)
+PASS  Metryki zbiorcze: maksymalna różnica 0.0055 (tolerancja 0.01)
+PASS  Metadane: split=['80_20'], test_size=[0.2], seed=[42], observations_split=['80_20']
+
+Kontrole: 10 PASS, 0 FAIL
+Wynik: PASS
+
+=== results\lab4\sensitivity ===
+PASS  Pliki i wczytanie: comparison.csv (2 wiersze), observations.csv (8 wierszy)
+PASS  Kolumny comparison: zgodne z kontraktem
+PASS  Kolumny observations: zgodne z kontraktem
+PASS  Metody i wiersze: baseline: 1, ridge: 1
+PASS  Liczba przypadków: n_train=[17, 17], n_test=[8, 8], observations=8, oczekiwane łącznie=25
+PASS  Braki i unikalność: braki: 0; row_index i id unikalne
+PASS  Znaki i jednostki: ceny i prognozy > 0, błędy i procenty >= 0, R2 <= 1
+PASS  Arytmetyka błędów: maksymalna różnica 0.0045 (tolerancja 0.02)
+PASS  Metryki zbiorcze: maksymalna różnica 0.0038 (tolerancja 0.01)
+PASS  Metadane: split=['70_30'], test_size=[0.3], seed=[42], observations_split=['70_30']
+
+Kontrole: 10 PASS, 0 FAIL
+Wynik: PASS
+
+Sprawdzono katalogi: 2
+Wynik końcowy: PASS
+
+Kod wyjścia: 0
