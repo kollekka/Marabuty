@@ -16,11 +16,11 @@ Cena samochodu używanego zależy jednocześnie od wielu cech, a ogłoszenia pod
 
 - [Opis problemu](docs/problem.md)
 - [Ocena źródła danych](docs/data.md)
-- [Próbka danych (25 rekordów)](data/sample.csv)
+- [Próbka danych (25 rekordów)](data/raw/sample.csv)
 
 ## Dane
 
-Głównym źródłem są publiczne ogłoszenia z Otomoto.pl pozyskane własnym eksportem opartym na skrypcie [`MrKabas/Otomoto-Scraper`](https://github.com/MrKabas/Otomoto-Scraper) (MIT, autor: Kacper Stopa z zespołu Marabuty). Pełny eksport `data/full-2026-11-01.csv` zawiera 233 040 rekordów i 103 kolumny; `data/sample.csv` to losowa próbka 25 rekordów (ziarno 42). Szczegóły, braki i ograniczenia opisuje [docs/data.md](docs/data.md).
+Głównym źródłem są publiczne ogłoszenia z Otomoto.pl pozyskane własnym eksportem opartym na skrypcie [`MrKabas/Otomoto-Scraper`](https://github.com/MrKabas/Otomoto-Scraper) (MIT, autor: Kacper Stopa z zespołu Marabuty). Pełny eksport `data/full-2026-11-01.csv` zawiera 233 040 rekordów i 103 kolumny; `data/raw/sample.csv` to losowa próbka 25 rekordów (ziarno 42). Szczegóły, braki i ograniczenia opisuje [docs/data.md](docs/data.md).
 
 ## Uruchomienie
 
