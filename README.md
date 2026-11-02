@@ -16,6 +16,7 @@ Cena samochodu używanego zależy jednocześnie od wielu cech, a ogłoszenia pod
 
 - [Opis problemu](docs/problem.md)
 - [Ocena źródła danych](docs/data.md)
+- [Słownik danych](docs/data-dictionary.md)
 - [Próbka danych (25 rekordów)](data/raw/sample.csv)
 
 ## Dane
@@ -24,4 +25,9 @@ Głównym źródłem są publiczne ogłoszenia z Otomoto.pl pozyskane własnym e
 
 ## Uruchomienie
 
-TODO
+```bash
+python -m pip install -r requirements.txt
+python scripts/prepare_data.py data/raw/sample.csv data/processed/sample-clean.csv
+```
+
+Skrypt odrzuca duplikaty, rekordy bez ceny, w obcej walucie i z dużymi brakami, usuwa kolumny nieprzydatne w modelu, uzupełnia pozostałe braki i zapisuje dane gotowe do trenowania. Wynik dla próbki: `data/processed/sample-clean.csv` — 25 rekordów, 81 kolumn, 0 braków. Pełny eksport daje 228 318 rekordów i 81 kolumn.

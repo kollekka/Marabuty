@@ -1,0 +1,2 @@
+# Minimalne zależności skryptu scripts/prepare_data.py
+pandas>=2.0
