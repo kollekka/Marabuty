@@ -122,3 +122,19 @@ Rekordy z brakami `make`/`model`/`year` (4 014) mają jednak wypełnione `price_
 - Scraping podlega regulaminowi Otomoto i wymaga respektowania `robots.txt`, opóźnień oraz ewentualnych limitów. Struktura strony i zabezpieczenia antyscrapingowe mogą się zmienić, więc skrypt trzeba utrzymywać.
 - Możliwe są braki, duplikaty, wartości odstające i błędy wpisywania (np. przebieg lub cena); część z nich wymaga decyzji po EDA.
 - Licencji kodu (MIT) nie utożsamiamy z licencją danych. Przed publikacją prototypu należy potwierdzić warunki wykorzystania danych w regulaminie Otomoto.
+
+## Wariant realizacji
+
+### Wybrany: lekki skrypt lokalny z eksportem CSV
+
+Wariant polega na jednorazowym pobraniu danych do CSV — źródło główne `data/full-2026-11-01.csv`, a źródło alternatywne `Car_sale_ads.csv` wyłącznie do testów pipeline'u i porównania. Lokalny skrypt w Pythonie czyści dane, oznacza wartości niemożliwe jako braki i zapisuje wynik; model jest trenowany skryptem scikit-learn z ustalonym ziarnem losowości i zapisywany do pliku `joblib`. Aplikacja korzysta z gotowego modelu przez `POST /predict` w FastAPI i formularz React, więc nie odpytuje Otomoto w czasie działania.
+
+Uzasadnienie: dane są już w repozytorium, wariant nie wymaga płatnego API ani stałego dostępu do Otomoto, a cały proces można powtórzyć na tym samym pliku. Spełnia zakres MVP z karty projektu, w którym dane na żywo są poza zakresem, i pozwala porównać modele bez zależności od dostępności serwisu.
+
+### Odrzucone warianty
+
+| Wariant | Powód odrzucenia |
+|---|---|
+| Odpytywanie Otomoto przez GraphQL lub scraping przy każdym żądaniu aplikacji | Wymaga stałego dostępu do niepublicznego API, obsługi throttlingu i zabezpieczeń DataDome oraz naraża aplikację na zmiany struktury odpowiedzi. Jest też sprzeczny z zakresem MVP i utrudnia powtarzalne testy. |
+| Komercyjne API z cenami samochodów | Generuje koszt abonamentu i uzależnia projekt od warunków dostawcy. Przy 233 040 rekordach z Otomoto nie wnosi wartości potrzebnej do prototypu. |
+| Zbiór Kaggle jako źródło produkcyjne | Migawka z 2021 r. nie odzwierciedla rynku z 2026 r. i ma tylko 25 kolumn. Nadaje się do testowania pipeline'u i porównania, ale nie do bieżącej wyceny. |
