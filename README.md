@@ -1,46 +1,27 @@
-# Prognozowanie cen używanych samochodów
+# Prognozowanie cen używanych samochodów osobowych
 
-Projekt zespołu Marabuty: model regresyjny i narzędzie do szacowania cen samochodów używanych na polskim rynku ogłoszeń.
+Projekt zespołu **Marabuty**: model regresyjny i narzędzie do orientacyjnej wyceny samochodów używanych na polskim rynku ogłoszeń.
 
 ## Problem
 
-Ceny podobnych samochodów różnią się, a kupujący i sprzedający często muszą porównywać ogłoszenia ręcznie. Projekt sprawdza, czy cenę ofertową można przewidywać na podstawie parametrów pojazdu i które cechy mają na nią największy wpływ.
+Cena samochodu używanego zależy jednocześnie od wielu cech, a ogłoszenia podobnych aut różnią się na tyle mocno, że kupujący i sprzedający nie mają prostego punktu odniesienia. Projekt sprawdza, jak dokładnie można przewidzieć cenę ofertową na podstawie parametrów pojazdu i które cechy wpływają na nią najsilniej.
 
 ## Zespół
 
-- Kacper Stopa 
+- Kacper Stopa
 - Adrian Świeca
-- Bartłomiej Taper 
+- Bartłomiej Taper
 
 ## Dokumentacja
 
 - [Opis problemu](docs/problem.md)
-- [Ocena danych i źródła](docs/data.md)
-- [Próbka danych (25 rekordów)](data/raw/sample.csv)
+- [Ocena źródła danych](docs/data.md)
+- [Próbka danych (25 rekordów)](data/sample.csv)
 
-## Środowisko i uruchomienie
+## Dane
 
-- **Wymagany Python:** 3.10 lub nowszy (projekt testowany na Pythonie 3.10).
-- **Instalacja zależności:**
+Głównym źródłem są publiczne ogłoszenia z Otomoto.pl pozyskane własnym eksportem opartym na skrypcie `simonloach/car-scraper` (MIT). Pełny eksport `data/full-2026-11-01.csv` zawiera 233 040 rekordów i 103 kolumny; `data/sample.csv` to losowa próbka 25 rekordów (ziarno 42). Szczegóły, braki i ograniczenia opisuje [docs/data.md](docs/data.md).
 
-  ```bash
-  python -m pip install -r requirements.txt
-  ```
+## Uruchomienie
 
-- **Przetwarzanie danych:**
-
-  ```bash
-  python scripts/prepare_data.py data/raw/sample.csv data/processed/sample-clean.csv
-  ```
-
-  Skrypt wypisuje liczbę rekordów przed i po, liczbę usuniętych duplikatów oraz liczbę braków, a wynik zapisuje w `data/processed/sample-clean.csv` (katalog tworzony automatycznie). Skrypt odmawia zapisu, gdy ścieżka wyjściowa jest taka sama jak wejściowa.
-
-- **Kontrola jakości:**
-
-  ```bash
-  python scripts/quality_checks.py data/processed/sample-clean.csv
-  ```
-
-  Skrypt wypisuje liczbę rekordów i kolumn, liczbę duplikatów oraz braki w oczyszczonym zbiorze.
-
-- **Oczekiwane wyniki dla próbki:** wejście `data/raw/sample.csv` ma 25 rekordów; po przetworzeniu `data/processed/sample-clean.csv` ma 25 rekordów, 27 kolumn (dodane `Displacement_l` i `Vehicle_age`) i 0 duplikatów.
+TODO

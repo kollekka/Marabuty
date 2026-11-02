@@ -6,9 +6,9 @@ Prognozowanie cen używanych samochodów osobowych na polskim rynku ogłoszeń z
 
 ## Opis
 
-Cena samochodu używanego zależy od wielu parametrów, między innymi marki, modelu, rocznika, przebiegu, silnika, paliwa i skrzyni biegów. Ceny ofert podobnych aut mogą się różnić, dlatego kupujący i sprzedający nie zawsze wiedzą, czy konkretna oferta jest bliska cenie rynkowej.
+Cena samochodu używanego zależy od wielu parametrów, między innymi marki, modelu, rocznika, przebiegu, silnika, paliwa, skrzyni biegów i lokalizacji. Ceny ofert podobnych aut mogą się różnić, dlatego kupujący i sprzedający nie zawsze wiedzą, czy konkretna oferta jest bliska cenie rynkowej.
 
-Projekt sprawdzi, jak dokładnie można przewidywać cenę ofertową na podstawie danych o pojeździe oraz które cechy najsilniej wiążą się z ceną. Wynik ma mieć charakter orientacyjny: dostępny zbiór zawiera ceny z ogłoszeń, a nie potwierdzone ceny transakcyjne.
+Projekt sprawdzi, jak dokładnie można przewidywać cenę ofertową na podstawie danych o pojeździe oraz które cechy najsilniej wiążą się z ceną. Wynik ma mieć charakter orientacyjny: zbiór zawiera ceny z ogłoszeń, a nie potwierdzone ceny transakcyjne.
 
 ## Odbiorcy
 
@@ -16,7 +16,7 @@ Osoby kupujące lub sprzedające samochód używany w Polsce, a dodatkowo małe 
 
 ## Planowany rezultat
 
-Prototyp ma przyjmować parametry samochodu i zwracać przewidywaną cenę w PLN. W dalszej części projektu zespół planuje porównać modele regresyjne oraz opisać jakość prognoz i ograniczenia danych.
+Prototyp aplikacji webowej: backend w Pythonie (FastAPI, scikit-learn) udostępnia model przez REST API, a frontend w React zawiera formularz parametrów pojazdu i zwraca prognozę ceny w PLN z przedziałem niepewności oraz oceną oferty. Do tego krótki raport analityczny: eksploracja danych, porównanie metod regresyjnych, metryki jakości i ranking ważności cech.
 
 ## Użytkownik i decyzja
 
@@ -43,7 +43,7 @@ W zakresie:
 
 Poza zakresem pierwszej wersji:
 
-- dane na żywo z portali ogłoszeniowych,
+- dane na żywo z portali ogłoszeniowych w aplikacji,
 - konta użytkowników,
 - prognoza zmian cen w czasie,
 - ceny transakcyjne.
@@ -52,11 +52,12 @@ Miary jakości: MAE, RMSE, MAPE, R². Wstępny cel MAPE ok. 15%, do weryfikacji 
 
 ## Potrzebne dane
 
-- Źródło: „Poland cars for sale dataset”, plik lokalny `data/Car_sale_ads.csv`; CSV, 25 kolumn, 208 304 rekordy (na podstawie `docs/data.md`).
-- Zmienna objaśniana: `Price` w PLN.
-- Predyktory: m.in. `Vehicle_brand`, `Vehicle_model`, `Production_year`, `Mileage_km`, `Power_HP`, `Displacement_cm3`, `Fuel_type`, `Transmission`, `Type`, `Offer_location`; pełny zestaw po EDA.
-- Ograniczenia: braki danych, możliwe duplikaty, wartości odstające i błędy wpisywania; ceny ofertowe, nie transakcyjne; migawka z jednego okresu (w próbce daty IV–V 2021).
-- Szczegóły źródła, braków i licencji: `docs/data.md`.
+- Źródło główne: publiczne ogłoszenia Otomoto.pl pozyskane własnym eksportem opartym na `simonloach/car-scraper` (MIT); pełny eksport `data/full-2026-11-01.csv` ma 233 040 rekordów i 103 kolumny.
+- Źródło pomocnicze: publiczny zbiór Kaggle „Poland cars for sale dataset” (starsza migawka, 208 304 rekordy) — tylko do porównania i testowania pipeline'u.
+- Zmienna objaśniana: `price_pln` w PLN (w danych występuje też 211 ogłoszeń w EUR).
+- Predyktory: m.in. `make`, `model`, `year`, `mileage_km`, `engine_cc`, `engine_power_km`, `fuel_type`, `gearbox`, `transmission`, `body_type`, `city`, `region`; pełny zestaw po EDA.
+- Ograniczenia: braki danych, możliwe wartości odstające i błędy wpisywania; ceny ofertowe, nie transakcyjne; migawka z jednego okresu (eksport 2026-11-01/02).
+- Szczegóły źródła, braków i zasad użycia: `docs/data.md`.
 
 ## Założenia i pytania otwarte
 
@@ -70,49 +71,16 @@ Założenia:
 
 Pytania otwarte:
 
-- Jaki jest dokładny adres źródłowy, właściciel, licencja i data pobrania zbioru?
-- Jaka jest jednostka `CO2_emissions` i czy kolumna jest użyteczna?
-- Czy `Features`, `Vehicle_version` i `Vehicle_generation` mają wystarczające pokrycie, by ich użyć?
-- Czy `Condition`, `Currency` i `Origin_country` są wystarczająco spójne do modelowania?
+- Jakie są dokładne warunki wykorzystania danych Otomoto i czy publikacja prototypu jest zgodna z regulaminem?
+- Czy wersja językowa i jednostki (`engine_power_km`, `engine_cc`) są spójne w całym zbiorze?
+- Czy rekordy bez `make`/`model`/`year` (4 014) należy odrzucić, czy da się je uzupełnić?
+- Czy ogłoszenia w EUR (211) przeliczać na PLN, czy wyłączyć z modelowania?
+- Czy pola `vin` i `first_registration` (100% braków) oraz `district` (73% braków) są użyteczne?
 - Czy docelowy próg MAPE ok. 15% jest realny po EDA?
-- Jaki zakres i ujednolicenie `Offer_location` jest sensowne?
 
-## Wymagania
+## Kryteria sukcesu
 
-Funkcjonalne:
-
-1. Użytkownik podaje parametry pojazdu i otrzymuje prognozę ceny w PLN z przedziałem niepewności.
-2. Aplikacja ocenia ofertę względem prognozy (poniżej / w okolicach / powyżej ceny rynkowej).
-3. API `POST /predict` zwraca prognozę dla poprawnych danych i błąd 422 dla niepoprawnych.
-4. Dostępny jest ranking/wykres ważności cech.
-5. Model jest porównany z punktem odniesienia (średnia lub mediana ceny dla marki i modelu) oraz co najmniej trzema metodami.
-
-Niefunkcjonalne:
-
-- powtarzalność: stałe ziarno losowości, jeden skrypt/notebook,
-- czas odpowiedzi API: kilka sekund,
-- walidacja danych wejściowych w formularzu i API,
-- testy `pytest` przechodzą; dokumentacja API w Swagger/OpenAPI,
-- README ze sposobem uruchomienia całości.
-
-### Tabela wymagań
-
-| ID | Wymaganie | Kryterium sprawdzenia | Źródło lub uzasadnienie | Status | Osoba                                |
-|---|---|---|---|---|--------------------------------------|
-| W-01 | Użytkownik otrzymuje orientacyjną cenę pojazdu w PLN wraz z przedziałem niepewności na podstawie podanych parametrów. | Dla poprawnych danych użytkownik widzi prognozę i przedział; wynik jest jasno opisany jako orientacyjny. | Karta, pkt 4 i 6; potrzeba z pkt 2 | potwierdzone | Frontend — Bartłomiej Taper |
-| W-02 | Użytkownik widzi, czy oferta jest poniżej, w okolicach, czy powyżej ceny rynkowej. | Interfejs pokazuje jedną z trzech ocen; sposób i progi oceny są jawnie opisane. | Karta, pkt 4 | potwierdzone | Frontend — Bartłomiej Taper |
-| W-03 | Prognoza jest wiarygodniejsza niż proste porównanie z medianą lub średnią ceny dla marki i modelu. | MAE, RMSE i R² na zbiorze testowym są lepsze niż dla punktu odniesienia. | Karta, pkt 7.1 | potwierdzone | Model — Kacper Stopa |
-| W-04 | Błąd względny prognozy nie przekracza ok. 15%. | MAPE na zbiorze testowym wynosi ≤ 15%; próg zostaje potwierdzony po EDA. | Karta, pkt 7.2 | założenie | Model — Kacper Stopa |
-| W-05 | Błędne lub niekompletne dane nie prowadzą do prognozy; użytkownik otrzymuje czytelny komunikat. | Formularz blokuje wysłanie błędnych danych, a API zwraca błąd 422; przypadki błędne są pokryte testami. | Karta, pkt 7.4 | potwierdzone | Dane/backend + Frontend — Adrian Świeca |
-| W-06 | Użytkownik rozumie, które cechy najmocniej wpływają na cenę. | Widoczny jest ranking lub wykres ważności cech wraz z opisem metody i ograniczeń. | Karta, pkt 4 i 6 | potwierdzone | Model + Frontend — Adrian Świeca |
-
-## Potrzeby informacyjne
-
-| Informacja | Do czego | Minimalny zakres | Format/częstotliwość | Czy dostępna |
-|---|---|---|---|---|
-| Cena ofertowa pojazdu (`Price`) | Zmienna objaśniana; punkt odniesienia dla prognozy | Cena w PLN dla każdego ogłoszenia | CSV; jednorazowa migawka | tak |
-| Parametry pojazdu: marka, model, rok, przebieg, moc, pojemność, paliwo, skrzynia, nadwozie | Predyktory modelu | Pola wymienione w karcie; pełny zestaw po EDA | CSV; jednorazowo | tak |
-| Lokalizacja oferty (`Offer_location`) | Ocena różnic regionalnych | Ujednolicona lokalizacja, np. miasto lub województwo | CSV; jednorazowo | częściowo — format i zakres do ujednolicenia |
-| Data publikacji oferty | Ocena aktualności i ewentualny podział czasowy | Data dla większości ogłoszeń oraz zakres dat | CSV; jednorazowo | częściowo — w próbce IV–V 2021, pełny zakres do sprawdzenia |
-| Licencja i źródło zbioru | Legalność wykorzystania i opis ograniczeń | Potwierdzona licencja, właściciel, link i data pobrania | Dokumentacja/metadane; jednorazowo | nie |
-| Ceny transakcyjne | Weryfikacja, czy cena ofertowa odpowiada rzeczywistej | Cena transakcyjna lub dane porównawcze | Poza zbiorem; brak | nie |
+1. Model osiąga na zbiorze testowym lepsze wyniki niż prosty punkt odniesienia (średnia lub mediana ceny dla marki i modelu), mierzone MAE, RMSE i R².
+2. Błąd względny (MAPE) na zbiorze testowym mieści się w założonym progu; wstępnie cel to ok. 15%, do weryfikacji po EDA.
+3. Porównanie co najmniej 3 metod jest odtwarzalne (jeden skrypt/notebook, ustalone ziarno losowości) i uzasadnia wybór modelu końcowego.
+4. Aplikacja (React + API w Pythonie) zwraca prognozę dla poprawnych danych wejściowych w kilka sekund i poprawnie obsługuje błędne dane (walidacja formularza i API).
