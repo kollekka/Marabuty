@@ -103,15 +103,17 @@ Rekordy z brakami `make`/`model`/`year` (4 014) mają jednak wypełnione `price_
 | Źródło | Publiczne ogłoszenia Otomoto.pl |
 | Właściciel danych | Otomoto/OLX |
 | Narzędzie | Własny eksport oparty na `MrKabas/Otomoto-Scraper` (MIT, autor: Kacper Stopa); dane w SQLite, eksport do CSV/Parquet/JSON |
+| Adres źródłowy | Portal: https://www.otomoto.pl/ ; endpoint GraphQL: https://www.otomoto.pl/graphql ; repozytorium scrapera: https://github.com/MrKabas/Otomoto-Scraper ; plik: `data/full-2026-11-01.csv` |
 | Zakres | Ogłoszenia sprzedaży używanych samochodów osobowych w Polsce wraz z ceną ofertową i parametrami pojazdu |
-| Okres i częstotliwość | Pojedyncza migawka: `first_seen` 2026-11-01, `created_at` 2026-09-03–2026-11-02. Kolejne eksporty możliwe po ustaleniu harmonogramu. |
+| Okres i częstotliwość | Jednorazowa migawka: pobranie 2026-11-01, uzupełnienie 2026-11-02; `created_at` 2026-09-03–2026-11-02. Częstotliwość kolejnych pobrań: do ustalenia. |
 | Jednostka obserwacji | Jeden wiersz = jedno ogłoszenie samochodu |
-| Dobór i liczebność | Pełny eksport obejmuje 233 040 ogłoszeń; sposób doboru zależy od zakresu dat, filtrów scrapera i paginacji. `data/sample.csv` to 25 losowych rekordów do prac technicznych. |
+| Dobór i liczebność | Pełny eksport 233 040 ogłoszeń (nie próba losowa); `data/raw/sample.csv` to 25 losowych rekordów (ziarno 42) wyłącznie do prac technicznych. Sposób doboru zależy od zakresu dat, filtrów scrapera i paginacji. |
 | Sposób pobrania | Uruchomienie scrapera na publicznym endpointcie GraphQL Otomoto.pl i eksport z SQLite do CSV |
-| Data pobrania | 2026-11-01/02 |
+| Parametry zapytania | Zapytania `advertSearch` (lista ogłoszeń, `page`, `sortBy`) i `advertDetails` (szczegóły, do 12 ogłoszeń na żądanie); domyślne ustawienia scrapera: `--rps 5`, `--batch 10`, `--concurrency 4`; eksport pełnego katalogu bez potwierdzonego filtra marki/modelu. Dokładna komenda, zakres dat i ewentualne filtry `criteria`/`--where`: do ustalenia. |
+| Data pobrania | 2026-11-01 (pierwsze pobranie); 2026-11-02 (uzupełnienie i eksport) |
 | Limity, koszt i uprawnienia | Brak opłaty; scraping zgodnie z `robots.txt` i regulaminem serwisu, z opóźnieniami między żądaniami. Dokładne limity i zasady publikacji: do sprawdzenia. |
 | Licencja i zasady publikacji | Kod scrapera MIT; dane podlegają regulaminowi Otomoto. Dane wykorzystujemy dydaktycznie, nie publikujemy danych osobowych sprzedawców ani pełnych ogłoszeń. |
-| Osoba odpowiedzialna | Adrian Świeca (dane/backend) |
+| Osoba odpowiedzialna | Adrian Świeca (dane/backend); narzędzie: Kacper Stopa |
 | Plan awaryjny | Ponowne pobranie mniejszego zakresu; alternatywnie zbiór Kaggle „Poland cars for sale dataset” do porównania |
 
 ## Ograniczenia i legalność
