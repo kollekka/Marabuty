@@ -21,6 +21,32 @@
 | Brakujące dane | Całkowicie puste: `vin`, `first_registration`. Bardzo wysokie braki: `district` (73,23%), `color_type` (47,13%), `first_owner` (44,59%), `service_aso` (42,81%), `has_alloy_wheels` (41,72%), `registered_pl` (37,53%), `country_origin` (36,48%), `has_cruise` (34,98%), `no_accident` (32,55%), `generation` (30,11%). Decyzja o odrzuceniu lub imputacji po EDA. |
 | Plan awaryjny | Ponowne uruchomienie scrapera z mniejszym zakresem dat lub `--max-pages`; alternatywnie publiczny zbiór Kaggle „Poland cars for sale dataset” (starsza migawka, 208 304 rekordy) wyłącznie do porównania i testowania pipeline'u, nie do zastąpienia aktualnego źródła. |
 
+## Źródła danych
+
+| Źródło | Co można pobrać? | Czy odpowiada potrzebom? | Dowód sprawdzenia | Braki lub ryzyko |
+|---|---|---|---|---|
+| Główne: Otomoto.pl — eksport `MrKabas/Otomoto-Scraper` | CSV/Parquet/JSON z bazy SQLite; w repozytorium `data/full-2026-11-01.csv` zawiera 233 040 ogłoszeń i 103 kolumny: cenę ofertową, parametry pojazdu, lokalizację i wyposażenie | Tak. Plik zawiera zmienną objaśnianą `price_pln` i predyktory wymagane w projekcie, a dane pochodzą z 2026 r. | `data/full-2026-11-01.csv`: 233 040 rekordów i 103 kolumny; `data/sample.csv`: 25 rekordów i 103 kolumny; repozytorium `MrKabas/Otomoto-Scraper` ma licencję MIT | `vin` i `first_registration`: 233 040 braków (100%); `district`: 170 665 (73,23%); dostępne są ceny ofertowe, nie transakcyjne; scraper zależy od GraphQL i regulaminu Otomoto |
+| Alternatywne: Kaggle „Poland cars for sale dataset (200k adverts)” | Jeden plik `Car_sale_ads.csv`: 208 304 wiersze i 25 kolumn — cena, waluta, stan, marka, model, wersja, generacja, rok produkcji, przebieg, moc, pojemność, paliwo, CO2, napęd, skrzynia, nadwozie, liczba drzwi, kolor, kraj pochodzenia, pierwszy właściciel, data pierwszej rejestracji, data publikacji, lokalizacja i wyposażenie | Częściowo. Zmienne odpowiadają potrzebom modelu, ale jest to migawka z 2021 r. z tego samego portalu, więc nie zastępuje źródła głównego i nie jest niezależnym źródłem rynkowym | Pobrano 2026-11-02 publicznym endpointem Kaggle API bez konta i klucza: ZIP 18 582 123 B, `Car_sale_ads.csv` 165 670 499 B; dwa pobrania dały identyczny SHA256 | Migawka 2021 (publikacje 2021-03-26–2021-05-05); 270 cen w EUR; 25 454 ogłoszenia nowych aut; duże braki: `First_owner` 143 210 (68,75%), `First_registration_date` 121 859 (58,50%), `CO2_emissions` 114 257 (54,85%), `Origin_country` 89 992 (43,20%); wartości odstające: przebieg do 1 111 111 111 km, cena do 6 999 000 PLN; brak `url` i danych sprzedawcy; CC0 jest deklaracją uploadera, a treść ogłoszeń pochodzi z Otomoto |
+
+Dowód pobrania źródła alternatywnego (2026-11-02):
+
+```bash
+curl -L -o archive.zip https://www.kaggle.com/api/v1/datasets/download/bartoszpieniak/poland-cars-for-sale-dataset
+```
+
+- ZIP: SHA256 `B0EC6C5F3D61423C926662B6B692BEFF2CF6B2A97AFE8E22A738AED4CCB795C8`.
+- `Car_sale_ads.csv`: SHA256 `496B4446C902DD9E18C245DB2664BF8666ADEDA02DE3F7E672B1AE707F5C1A8E`.
+- Metadane Kaggle: wersja 3, data aktualizacji 2021-05-18, licencja `CC0: Public Domain`.
+
+## Pytania kontrolne dla źródła alternatywnego
+
+1. **Dopasowanie.** Zbiór zawiera cenę ofertową oraz markę, model, wersję, generację, rok produkcji, przebieg, moc, pojemność, paliwo, CO2, napęd, skrzynię, nadwozie, liczbę drzwi, kolor, kraj pochodzenia, informację o pierwszym właścicielu, daty rejestracji i publikacji, lokalizację i wyposażenie — czyli zmienną objaśnianą i większość predyktorów z `docs/problem.md`. Nie zawiera `url`, danych sprzedawcy ani VIN, a publikacje pochodzą z okresu 2021-03-26–2021-05-05, więc odpowiada potrzebom testowania pipeline'u i porównania, ale nie bieżącej wyceny w 2026 r.
+2. **Właściciel.** Zbiór opublikował Bartosz Pieniak na Kaggle (wersja 3 z 2021-05-18). Ogłoszenia pochodzą z Otomoto.pl, a kod zbierający to `bpieniak/otomoto-webscrape` (wcześniej `pt3k/otomoto-webscrape`), który nie ma licencji. Właścicielem treści ogłoszeń pozostaje Otomoto/OLX.
+3. **Jakość.** Zbiór ma 208 304 wiersze, 25 kolumn, 208 304 unikalne wartości `Index` i 0 pełnych duplikatów wierszy; zawiera 108 marek i 1 203 modele. Braki są wysokie: `First_owner` 143 210 (68,75%), `First_registration_date` 121 859 (58,50%), `CO2_emissions` 114 257 (54,85%), `Origin_country` 89 992 (43,20%), `Vehicle_version` 70 222 (33,71%), `Vehicle_generation` 60 444 (29,02%). Występują wartości odstające: przebieg do 1 111 111 111 km (17 rekordów powyżej 2 000 000 km), cena do 6 999 000 PLN (38 cen poniżej 1 000 PLN), rok produkcji od 1915, a 224 daty pierwszej rejestracji są niepoprawne.
+4. **Dostęp.** Pobranie przez endpoint `https://www.kaggle.com/api/v1/datasets/download/bartoszpieniak/poland-cars-for-sale-dataset` nie wymagało konta ani klucza API; serwis zwrócił przekierowanie na podpisany adres Google Storage i plik ZIP o rozmiarze 18 582 123 B. Dostępność zależy od serwisu Kaggle: autor lub platforma mogą zmienić albo usunąć zbiór.
+5. **Licencja.** Kaggle deklaruje licencję `CC0: Public Domain`. Deklaracja pochodzi od uploadera i nie przenosi praw Otomoto do treści ogłoszeń; kod `bpieniak/otomoto-webscrape` nie ma licencji. Zbiór wykorzystujemy dydaktycznie, bez publikowania danych osobowych sprzedawców.
+6. **Powtarzalność.** Wersja 3 zbioru jest oznaczona jako gotowa i niezmieniona od 2021-05-18. Dwa niezależne pobrania tego samego endpointu dały identyczny SHA256 archiwum `B0EC6C5F3D61423C926662B6B692BEFF2CF6B2A97AFE8E22A738AED4CCB795C8`, a plik CSV ma SHA256 `496B4446C902DD9E18C245DB2664BF8666ADEDA02DE3F7E672B1AE707F5C1A8E`; odtworzenie jest możliwe, dopóki Kaggle udostępnia tę wersję.
+
 ## Zakres i jakość danych
 
 Profilowanie wykonano na całym pliku `data/full-2026-11-01.csv` (233 040 rekordów) skryptem w Pythonie z modułem `csv`, z kodowaniem `utf-8-sig`. Sprawdzono nazwy i liczbę pól, typy wartości, formaty dat, jednostki, braki, duplikaty oraz podejrzane wartości. Dane nie były poprawiane na tym etapie.
