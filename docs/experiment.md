@@ -147,6 +147,25 @@ Raport powinien zawierać tabelę z metrykami baseline i modelu dla obu podział
 
 Kryterium praktyczne to spełnienie R6: MAE i RMSE niższe oraz R² wyższe niż baseline, a MAPE ≤ 15%. Sama minimalna poprawa jednej metryki nie wystarcza do decyzji wdrożeniowej. Przy tak małej próbce raportujemy również bezwzględne wartości błędów, żeby nie ukrywać niepewności za samym rankingiem.
 
+## Ograniczenia
+
+- Próba liczy 25 rekordów, a zbiór testowy 5 lub 8 obserwacji. Pojedynczy błąd mocno zmienia metryki, więc wynik jest orientacyjny.
+- Dane pochodzą z jednej migawki z 2026-11-01. Nie pozwalają ocenić sezonowości ani zmian cen w czasie.
+- Ceny są ofertowe, a nie transakcyjne. Model uczy się oczekiwań sprzedających, nie rzeczywistych cen sprzedaży.
+- Brak niezależnego zbioru końcowego. Test posłużył do oceny, ale nie do strojenia; nie ma jednak zewnętrznej walidacji na innym okresie lub rynku.
+- Baseline z fallbackiem `make+model → make → globalna mediana` jest czuły na pary i marki niewystępujące w train. Wiele par pojawia się tylko raz.
+- Brakuje przetworzonego pełnego zbioru 228 318 rekordów, cen transakcyjnych i historii cen. Nie można uogólniać wyniku na cały rynek ani twierdzić, że próg MAPE 15% zostanie osiągnięty poza próbką.
+- Dane są rzeczywiste, nie syntetyczne. Ograniczeniem jest mała, techniczna i niereprezentatywna próbka, a nie sposób ich wygenerowania.
+
+## Użycie AI
+
+| Narzędzie | Do czego użyto | Co zweryfikowano |
+|---|---|---|
+| Asystent AI (opencode) | Redakcja i uporządkowanie sekcji C1–C4, propozycja listy kontroli w `check_results.py`, pomoc w zapisie wzorów i języka dokumentacji. | Wszystkie liczby pochodzą z niezależnego obliczenia C1 i plików `results/lab4/`; skrypt kontroli uruchomiono na obu katalogach i na kopii z błędem. Źródeł literaturowych nie generowano ponownie — pozostały w sekcji Osoby A. |
+| Asystent AI (opencode) | Sprawdzenie spójności nagłówków, tabel i poleceń uruchomienia. | Porównano nagłówki z szablonem, uruchomiono `check_results.py`, sprawdzono kod wyjścia i brak zmian w plikach A i B. |
+
+AI nie było źródłem danych ani wyników. Nie tworzono nowych publikacji ani nie zmieniano parametrów po obejrzeniu wyników.
+
 ## Odtworzenie
 
 A4 wykonano 2026-11-02 na commitcie `docs: README Lab 4` (ostatni commit Osoby B). Użyto `.venv` z Pythonem 3.13.5, pandas 3.1.0 i scikit-learn 1.9.1. Uruchomiono dokładnie polecenia z README Osoby B:
