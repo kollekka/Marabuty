@@ -1,2 +1,3 @@
-# Minimalne zależności skryptu scripts/prepare_data.py
+# Zależności do przetwarzania danych i porównania metod
 pandas>=2.0
+scikit-learn>=1.3
