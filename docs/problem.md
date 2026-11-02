@@ -52,7 +52,7 @@ Miary jakości: MAE, RMSE, MAPE, R². Wstępny cel MAPE ok. 15%, do weryfikacji 
 
 ## Potrzebne dane
 
-- Źródło główne: publiczne ogłoszenia Otomoto.pl pozyskane własnym eksportem opartym na `simonloach/car-scraper` (MIT); pełny eksport `data/full-2026-11-01.csv` ma 233 040 rekordów i 103 kolumny.
+- Źródło główne: publiczne ogłoszenia Otomoto.pl pozyskane własnym eksportem opartym na `MrKabas/Otomoto-Scraper` (MIT, autor: Kacper Stopa z zespołu Marabuty); pełny eksport `data/full-2026-11-01.csv` ma 233 040 rekordów i 103 kolumny.
 - Źródło pomocnicze: publiczny zbiór Kaggle „Poland cars for sale dataset” (starsza migawka, 208 304 rekordy) — tylko do porównania i testowania pipeline'u.
 - Zmienna objaśniana: `price_pln` w PLN (w danych występuje też 211 ogłoszeń w EUR).
 - Predyktory: m.in. `make`, `model`, `year`, `mileage_km`, `engine_cc`, `engine_power_km`, `fuel_type`, `gearbox`, `transmission`, `body_type`, `city`, `region`; pełny zestaw po EDA.

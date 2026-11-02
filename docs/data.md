@@ -4,9 +4,9 @@
 
 | Element | Wynik sprawdzenia |
 |---|---|
-| Źródło i właściciel | Publiczne ogłoszenia serwisu Otomoto.pl (Grupa OLX). Dane pozyskane własnym eksportem opartym na otwartoźródłowym skrypcie `simonloach/car-scraper` (MIT). Właścicielem ofert i danych jest Otomoto/OLX, nie zespół; licencja MIT dotyczy kodu skryptu, a nie danych. |
-| Link | Portal: https://www.otomoto.pl/ ; scraper: https://github.com/simonloach/car-scraper ; plik w repozytorium: `data/full-2026-11-01.csv` |
-| Wymaganie dostępu | Publiczny dostęp do ogłoszeń, bez klucza API. Wymagane uruchomienie scrapera (Python 3.10+, Selenium/Poetry lub Docker) i konfiguracja `targets.json` adresami wyszukiwania. |
+| Źródło i właściciel | Publiczne ogłoszenia serwisu Otomoto.pl (Grupa OLX). Dane pozyskane własnym eksportem opartym na skrypcie `MrKabas/Otomoto-Scraper` (MIT) autorstwa Kacpra Stopy z zespołu Marabuty. Właścicielem ofert i danych jest Otomoto/OLX, nie zespół; licencja MIT dotyczy kodu skryptu, a nie danych. |
+| Link | Portal: https://www.otomoto.pl/ ; scraper: https://github.com/MrKabas/Otomoto-Scraper ; plik w repozytorium: `data/full-2026-11-01.csv` |
+| Wymaganie dostępu | Publiczny dostęp do ogłoszeń przez GraphQL, bez klucza API. Wymagane uruchomienie scrapera (Node.js ≥ 20, npm) i eksport z SQLite do CSV/Parquet/JSON. |
 | Data pobrania | Eksport oznaczony w nazwie pliku jako 2026-11-01. `first_seen` = 2026-11-01T22:49:37.293Z dla wszystkich rekordów; `created_at` od 2026-09-03T05:24:24Z do 2026-11-02T15:33:24Z. |
 | Format | CSV, UTF-8 z BOM, separator przecinek, 103 kolumny, 233 040 rekordów (233 041 wierszy z nagłówkiem), rozmiar ok. 154 MB. |
 | Liczba rekordów | 233 040 rekordów; 233 040 unikalnych `id` i 233 040 unikalnych `url`; 0 pełnych duplikatów wierszy. |
@@ -16,10 +16,10 @@
 | Limit | Brak znanego twardego limitu w samym pliku. Scraping podlega `robots.txt` i regulaminowi Otomoto. W `robots.txt` obowiązuje `Allow: /` poza listą wyłączonych ścieżek (m.in. `/api/`, `/ajax/`, `/account/`); nagłówek `Content-Signal` ustawia `ai-train=yes, search=yes, ai-input=yes`. Dokładne limity zapytań i mechanizmy antyscrapingowe: do sprawdzenia. |
 | Klucz | `id` — unikalny identyfikator ogłoszenia; alternatywnie unikalny `url`. |
 | Koszt | Brak opłaty za dane. Koszt własny: czas pobierania, utrzymanie scrapera i ryzyko zmian HTML/antyscrapingowych. |
-| Licencja | Kod `simonloach/car-scraper`: MIT. Dane Otomoto nie są objęte MIT; warunki wykorzystania i publikacji wynikają z regulaminu serwisu — do sprawdzenia przed publikacją. Zakładamy użycie dydaktyczne, bez publikowania danych osobowych sprzedawców. |
-| Próba ponownego pobrania | Nie wykonano w ramach tego etapu. `data/full-2026-11-01.csv` jest pojedynczym eksportem. Kolejne pobranie wymaga skonfigurowania `targets.json` i porównania liczebności, zakresu dat oraz kluczy z obecnym plikiem. |
+| Licencja | Kod `MrKabas/Otomoto-Scraper`: MIT (autor: Kacper Stopa). Dane Otomoto nie są objęte MIT; warunki wykorzystania i publikacji wynikają z regulaminu serwisu — do sprawdzenia przed publikacją. Zakładamy użycie dydaktyczne, bez publikowania danych osobowych sprzedawców. |
+| Próba ponownego pobrania | Nie wykonano w ramach tego etapu. `data/full-2026-11-01.csv` jest pojedynczym eksportem. Kolejne pobranie wymaga uruchomienia scrapera z wybranym zakresem dat i porównania liczebności, zakresu dat oraz kluczy z obecnym plikiem. |
 | Brakujące dane | Całkowicie puste: `vin`, `first_registration`. Bardzo wysokie braki: `district` (73,23%), `color_type` (47,13%), `first_owner` (44,59%), `service_aso` (42,81%), `has_alloy_wheels` (41,72%), `registered_pl` (37,53%), `country_origin` (36,48%), `has_cruise` (34,98%), `no_accident` (32,55%), `generation` (30,11%). Decyzja o odrzuceniu lub imputacji po EDA. |
-| Plan awaryjny | Ponowne uruchomienie scrapera z mniejszym zakresem `targets.json`; alternatywnie publiczny zbiór Kaggle „Poland cars for sale dataset” (starsza migawka, 208 304 rekordy) wyłącznie do porównania i testowania pipeline'u, nie do zastąpienia aktualnego źródła. |
+| Plan awaryjny | Ponowne uruchomienie scrapera z mniejszym zakresem dat lub `--max-pages`; alternatywnie publiczny zbiór Kaggle „Poland cars for sale dataset” (starsza migawka, 208 304 rekordy) wyłącznie do porównania i testowania pipeline'u, nie do zastąpienia aktualnego źródła. |
 
 ## Zakres i jakość danych
 
@@ -76,12 +76,12 @@ Rekordy z brakami `make`/`model`/`year` (4 014) mają jednak wypełnione `price_
 |---|---|
 | Źródło | Publiczne ogłoszenia Otomoto.pl |
 | Właściciel danych | Otomoto/OLX |
-| Narzędzie | Własny eksport oparty na `simonloach/car-scraper` (MIT), konfigurowany plikiem `targets.json` |
+| Narzędzie | Własny eksport oparty na `MrKabas/Otomoto-Scraper` (MIT, autor: Kacper Stopa); dane w SQLite, eksport do CSV/Parquet/JSON |
 | Zakres | Ogłoszenia sprzedaży używanych samochodów osobowych w Polsce wraz z ceną ofertową i parametrami pojazdu |
 | Okres i częstotliwość | Pojedyncza migawka: `first_seen` 2026-11-01, `created_at` 2026-09-03–2026-11-02. Kolejne eksporty możliwe po ustaleniu harmonogramu. |
 | Jednostka obserwacji | Jeden wiersz = jedno ogłoszenie samochodu |
-| Dobór i liczebność | Pełny eksport obejmuje 233 040 ogłoszeń; sposób doboru zależy od konfiguracji `targets.json` i paginacji. `data/sample.csv` to 25 losowych rekordów do prac technicznych. |
-| Sposób pobrania | Uruchomienie scrapera na publicznych stronach wyników Otomoto.pl |
+| Dobór i liczebność | Pełny eksport obejmuje 233 040 ogłoszeń; sposób doboru zależy od zakresu dat, filtrów scrapera i paginacji. `data/sample.csv` to 25 losowych rekordów do prac technicznych. |
+| Sposób pobrania | Uruchomienie scrapera na publicznym endpointcie GraphQL Otomoto.pl i eksport z SQLite do CSV |
 | Data pobrania | 2026-11-01/02 |
 | Limity, koszt i uprawnienia | Brak opłaty; scraping zgodnie z `robots.txt` i regulaminem serwisu, z opóźnieniami między żądaniami. Dokładne limity i zasady publikacji: do sprawdzenia. |
 | Licencja i zasady publikacji | Kod scrapera MIT; dane podlegają regulaminowi Otomoto. Dane wykorzystujemy dydaktycznie, nie publikujemy danych osobowych sprzedawców ani pełnych ogłoszeń. |
