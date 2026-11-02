@@ -1,0 +1,15 @@
+PASS  Wczytanie pliku: data\processed\sample-clean.csv
+PASS  Liczba rekordów i kolumn: 25 rekordów, 81 kolumn
+PASS  Wymagane kolumny: wszystkie obecne
+PASS  ID niepuste i unikalne: 25 unikalnych ID, 0 pustych, 0 duplikatów
+PASS  Typy kolumn liczbowych: wszystkie kolumny liczbowe
+PASS  Format daty created_at: wszystkie daty w formacie ISO 8601
+PASS  Zakresy wartości: wszystkie wartości w zakresie
+PASS  Dozwolone kategorie: wszystkie kategorie dozwolone
+PASS  Flagi 0/1: 51 kolumn flag poprawnych
+PASS  Kompletność kolumn kluczowych: brak braków
+
+Kontrole: 10 PASS, 0 FAIL
+Wynik: PASS
+
+Kod wyjścia: 0

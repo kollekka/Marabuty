@@ -1,14 +1,15 @@
 PASS  Wczytanie pliku: data\test\sample-bad.csv
-PASS  Liczba rekord├│w i kolumn: 25 rekord├│w, 81 kolumn
+PASS  Liczba rekordów i kolumn: 25 rekordów, 81 kolumn
 PASS  Wymagane kolumny: wszystkie obecne
-FAIL  ID niepuste i unikalne: 24 unikalnych ID, 0 pustych, 1 duplikat├│w
+FAIL  ID niepuste i unikalne: 24 unikalnych ID, 0 pustych, 1 duplikatów
 PASS  Typy kolumn liczbowych: wszystkie kolumny liczbowe
 FAIL  Format daty created_at: 1 niepoprawnych dat
-FAIL  Zakresy warto┼Ťci: price_pln: 1 poza 1000-5000000
+FAIL  Zakresy wartości: price_pln: 1 poza 1000-5000000
 PASS  Dozwolone kategorie: wszystkie kategorie dozwolone
 PASS  Flagi 0/1: 51 kolumn flag poprawnych
-PASS  Kompletno┼Ť─ç kolumn kluczowych: brak brak├│w
+PASS  Kompletność kolumn kluczowych: brak braków
 
 Kontrole: 7 PASS, 3 FAIL
 Wynik: FAIL
+
 Kod wyjścia: 1

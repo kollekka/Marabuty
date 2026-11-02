@@ -1,0 +1,71 @@
+Plik wejściowy:  data\raw\sample.csv
+Plik wyjściowy:  data\processed\sample-clean.csv
+
+Rekordy:  25 -> 25  (usunięto 0)
+Kolumny:  103 -> 81  (usunięto 22)
+
+Wiersze odrzucone:
+  duplikaty id: 0
+  waluta inna niż PLN: 0
+  brak price_pln: 0
+  ponad 50% braków w 17 polach rdzeniowych: 0
+  cena poniżej 1000 PLN: 0
+  przebieg powyżej 2 000 000 km: 0
+  rok poza 1950-2026: 0
+  pojemność poza 500-8000 cm3: 0
+  moc poza 20-2000 KM: 0
+
+Kolumny usunięte:
+  url: adres ogłoszenia, unikalny dla wiersza
+  title: tekst ogłoszenia, duplikuje make i model
+  seller_id: identyfikator sprzedawcy
+  seller_name: nazwa sprzedawcy
+  updated_at: data aktualizacji rekordu w bazie scrapera
+  first_seen: znacznik uruchomienia scrapera, stały w całym eksporcie
+  last_seen: znacznik uruchomienia scrapera, stały w całym eksporcie
+  enriched_at: data uzupełnienia szczegółów przez scraper
+  state: stan przetwarzania rekordu przez scraper
+  attempts: liczba prób pobrania szczegółów
+  status: status ogłoszenia w bazie scrapera
+  currency: po filtrze zawiera wyłącznie PLN
+  vin: 100% braków w danych źródłowych
+  first_registration: 100% braków w danych źródłowych
+  last_error: 100% braków w danych źródłowych
+  district: ponad 70% braków po odrzuceniu wierszy
+  has_imported: kopia kolumny imported
+  is_damaged: kopia kolumny damaged
+  is_original_owner: kopia kolumny first_owner
+  is_no_accident: kopia kolumny no_accident
+  has_service_record: kopia kolumny service_aso
+  has_4wd: kopia informacji zawartej w kolumnie transmission
+
+Braki w komórkach: 283 -> 0
+Uzupełnione braki:
+  seats: 1 (mediana)
+  transmission: 4 (etykieta "Nieznana")
+  generation: 6 (etykieta "Nieznana")
+  color_type: 10 (etykieta "Nieznana")
+  country_origin: 8 (etykieta "Nieznana")
+  ac_type: 3 (etykieta "Nieznana")
+  cruise_type: 10 (etykieta "Nieznana")
+  alloy_wheels_type: 6 (etykieta "Nieznana")
+  headlights_type: 15 (etykieta "Nieznana")
+  drive_type: 4 (etykieta "Nieznana")
+  has_ac: 3 (0 (nie zadeklarowano))
+  has_cruise: 10 (0 (nie zadeklarowano))
+  has_adaptive_cruise: 10 (0 (nie zadeklarowano))
+  has_leather: 5 (0 (nie zadeklarowano))
+  has_alloy_wheels: 6 (0 (nie zadeklarowano))
+  has_sunroof: 21 (0 (nie zadeklarowano))
+  has_led_lights: 15 (0 (nie zadeklarowano))
+  has_vin: 1 (0 (nie zadeklarowano))
+  damaged: 5 (0 (nie zadeklarowano))
+  registered_pl: 11 (0 (nie zadeklarowano))
+  first_owner: 13 (0 (nie zadeklarowano))
+  no_accident: 7 (0 (nie zadeklarowano))
+  service_aso: 9 (0 (nie zadeklarowano))
+  imported: 3 (0 (nie zadeklarowano))
+
+Zapisano 25 rekordów i 81 kolumn.
+
+Kod wyjścia: 0
