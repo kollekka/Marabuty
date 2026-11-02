@@ -6,14 +6,14 @@
 |---|---|
 | Pytanie badawcze | Czy regresja log-liniowa przewiduje cenę ofertową samochodu używanego w Polsce dokładniej niż mediana ceny dla marki i modelu? |
 | Wymaganie | R6: model na zbiorze testowym osiąga lepsze MAE, RMSE i R² niż baseline oraz MAPE ≤ ok. 15%. |
-| Dane i wersja | `data/processed/sample-clean.csv`, wersja `7e1d8d4` (25 rekordów, 81 kolumn); źródło `data/raw/sample.csv`, wersja `5de74b3`; pełny eksport `data/full-2026-11-01.csv`, wersja `1d61fa0`. |
+| Dane i wersja | `data/processed/sample-clean.csv`, wersja z commita `feat: wynik czyszczenia` (25 rekordów, 81 kolumn); źródło `data/raw/sample.csv`, wersja z commita `przeniesienie próbki do data/raw/`; pełny eksport `data/full-2026-11-01.csv` (233 040 rekordów, 103 kolumny, migawka z 2026-11-01). |
 | Zakres i liczba obserwacji | 25 ogłoszeń z jednej migawki (2026-11-01); 20 treningowych i 5 testowych; tylko ceny ofertowe w PLN; próbka techniczna, nie reprezentatywna. |
 | Metoda i punkt odniesienia | Regresja liniowa z karą L2 (Ridge, `alpha=1.0`) na `log1p(price_pln)`; baseline: mediana `price_pln` dla pary `make`+`model`, z fallbackiem do mediany `make`, a potem globalnej mediany z train. |
 | Metryki | MAE (główna, PLN), RMSE (PLN), R², MAPE (%, tylko ceny > 0). |
 | Kryterium praktyczne | R6: MAE i RMSE niższe, R² wyższe niż baseline na tym samym teście oraz MAPE ≤ 15%; przy 25 rekordach wynik jest orientacyjny. |
 | Warunki porównania | Ten sam podział 80/20 (20/5), ziarno 42; baseline i model uczone wyłącznie na train; metryki na teście; test nie służy do strojenia. |
 | Próba wrażliwości | Powtórzenie dla podziału 70/30 (17/8), ziarno 42; ocena, czy ranking metod i R6 się utrzymują. |
-| Odtworzenie | Po otrzymaniu README i `results/lab4/` od Osoby B; uruchomienie w `.venv`, porównanie `comparison.csv` i wyników wrażliwości; szczegóły w sekcji Odtworzenie. |
+| Odtworzenie | Wykonane 2026-11-02 na commitcie `docs: README Lab 4`; wyniki identyczne z plikami Osoby B; szczegóły i wnioski w sekcji Odtworzenie. |
 
 ## Pytanie i wymaganie
 
@@ -25,9 +25,9 @@ Hipoteza: dodanie roku, przebiegu, marki/modelu i parametrów technicznych powin
 
 ## Dane
 
-Eksperyment korzysta z `data/processed/sample-clean.csv` (25 rekordów, 81 kolumn, wersja `7e1d8d4`). Plik powstał przez uruchomienie `scripts/prepare_data.py` na `data/raw/sample.csv` (25 rekordów, 103 kolumny, wersja `5de74b3`), czyli na losowej próbce technicznej z pełnego eksportu Otomoto (ziarno 42). Kontrole `scripts/quality_checks.py` przechodzą 10 z 10 kontroli, a w pliku nie ma braków w komórkach.
+Eksperyment korzysta z `data/processed/sample-clean.csv` (25 rekordów, 81 kolumn, wersja z commita `feat: wynik czyszczenia`). Plik powstał przez uruchomienie `scripts/prepare_data.py` na `data/raw/sample.csv` (25 rekordów, 103 kolumny, wersja z commita `przeniesienie próbki do data/raw/`), czyli na losowej próbce technicznej z pełnego eksportu Otomoto (ziarno 42). Kontrole `scripts/quality_checks.py` przechodzą 10 z 10 kontroli, a w pliku nie ma braków w komórkach.
 
-Pełny eksport `data/full-2026-11-01.csv` ma 233 040 rekordów i 103 kolumny (wersja `1d61fa0`). Według README pełne przetworzenie daje 228 318 rekordów i 81 kolumn, ale ten plik nie jest obecnie w repozytorium. Dlatego eksperyment wykonujemy na dostępnej próbce 25 rekordów i nie uogólniamy wyników na cały rynek. Po udostępnieniu pełnego pliku przetworzonego należy powtórzyć procedurę.
+Pełny eksport `data/full-2026-11-01.csv` ma 233 040 rekordów i 103 kolumny (migawka z 2026-11-01). Według README pełne przetworzenie daje 228 318 rekordów i 81 kolumn, ale ten plik nie jest obecnie w repozytorium. Dlatego eksperyment wykonujemy na dostępnej próbce 25 rekordów i nie uogólniamy wyników na cały rynek. Po udostępnieniu pełnego pliku przetworzonego należy powtórzyć procedurę.
 
 W próbce `price_pln` wynosi od 4 699 do 830 900 PLN, a mediana to 49 700 PLN. `year` zawiera się w przedziale 2008–2026, a `mileage_km` w przedziale 10–304 000 km. Wiele par `make`+`model` występuje tylko raz; zaledwie kilka grup ma co najmniej dwie obserwacje. To utrudnia baseline i zwiększa wariancję wyniku.
 
@@ -80,15 +80,28 @@ Kryterium praktyczne to spełnienie R6: MAE i RMSE niższe oraz R² wyższe niż
 
 ## Odtworzenie
 
-A4 nie zostało jeszcze wykonane, ponieważ Osoba B nie dostarczyła README z poleceniem uruchomienia porównania ani katalogu `results/lab4/` z plikami `comparison.csv`, `observations.csv` i wynikami próby wrażliwości. Nie wpisujemy wyników bez uruchomienia.
+A4 wykonano 2026-11-02 na commitcie `docs: README Lab 4` (ostatni commit Osoby B). Użyto `.venv` z Pythonem 3.13.5, pandas 3.1.0 i scikit-learn 1.9.1. Uruchomiono dokładnie polecenia z README Osoby B:
 
-Lista kontrolna po otrzymaniu materiałów:
+```powershell
+python scripts/compare_methods.py data/processed/sample-clean.csv --output-dir results/lab4 --test-size 0.2 --seed 42
+python scripts/compare_methods.py data/processed/sample-clean.csv --output-dir results/lab4/sensitivity --test-size 0.3 --seed 42
+```
 
-1. Sprawdzić wersję danych i kod z README B; zapisać commit, na którym wykonano odtworzenie.
-2. Utworzyć i aktywować `.venv`, zainstalować zależności z `requirements.txt` oraz ewentualne zależności modelowania podane w README B.
-3. Uruchomić dokładnie komendę z README B, bez modyfikowania parametrów podziału ani ziarna.
-4. Sprawdzić, czy powstały `results/lab4/comparison.csv`, `results/lab4/observations.csv` oraz pliki próby wrażliwości.
-5. Porównać liczby z kontraktem: 20/5 dla 80/20, 17/8 dla 70/30, ziarno 42, baseline mediany `make`+`model`, metryki MAE, RMSE, R² i MAPE.
-6. Zapisać w tej sekcji datę, commit, użyte polecenie, uzyskane metryki i różnice względem wyników B.
+Wyniki na teście:
 
-Tolerancja odtworzenia: liczba rekordów i przypisanie wierszy do train/test muszą być identyczne. Metryki porównujemy z dokładnością do 0,01 PLN lub 0,01 p.p.; różnicę większą niż 1% względem wyniku B traktujemy jako rozbieżność wymagającą wyjaśnienia. Brak pliku wynikowego lub inna liczba wierszy oznacza, że A4 nie jest odtworzone.
+| Podział | Metoda | n_train | n_test | MAE [PLN] | RMSE [PLN] | R² | MAPE [%] |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 80/20 | baseline | 20 | 5 | 185 699,90 | 350 138,20 | −0,2127 | 149,84 |
+| 80/20 | ridge | 20 | 5 | 39 530,62 | 65 989,83 | 0,9569 | 33,35 |
+| 70/30 | baseline | 17 | 8 | 135 692,44 | 280 966,13 | −0,1587 | 137,49 |
+| 70/30 | ridge | 17 | 8 | 20 386,01 | 30 384,92 | 0,9864 | 25,84 |
+
+Odtworzenie jest zgodne z wynikami Osoby B: wszystkie cztery pliki (`results/lab4/comparison.csv`, `results/lab4/observations.csv`, `results/lab4/sensitivity/comparison.csv`, `results/lab4/sensitivity/observations.csv`) są identyczne co do bajtu (zgodne sumy SHA256). Różnica metryk wynosi 0, więc przyjęta tolerancja została spełniona.
+
+### Wnioski
+
+R6 jest spełnione częściowo. Model Ridge bije baseline w MAE, RMSE i R² w obu podziałach: przy 80/20 obniża MAE o 146 169,28 PLN (−78,71%), a przy 70/30 o 115 306,43 PLN (−84,98%). Jednocześnie MAPE nie schodzi poniżej progu 15% i wynosi 33,35% dla 80/20 oraz 25,84% dla 70/30.
+
+Na 5–8 obserwacjach testowych jest to wynik orientacyjny, a nie rozstrzygnięcie o jakości modelu na rynku. Pojedyncza droga lub tania obserwacja może silnie zmienić MAPE, a baseline z medianą dla marki i modelu jest szczególnie wrażliwy na brak tej samej pary w train. Dodatni i wysoki R² modelu oraz ujemny R² baseline oznaczają, że na tej próbce model jest wyraźnie lepszy, ale nie dowodzą powtarzalności na pełnym zbiorze.
+
+Wniosek praktyczny: model można traktować jako obiecujący punkt wyjścia, ale R6 nie jest w pełni spełnione, dopóki MAPE nie spadnie do ok. 15%. Kolejny krok to powtórzenie procedury na pełnym przetworzonym zbiorze 228 318 rekordów i sprawdzenie, czy poprawa względem baseline oraz poziom MAPE utrzymują się poza próbką 25 rekordów.
