@@ -1,0 +1,27 @@
+# Oczekiwany wynik kontroli jakości
+
+Plik: `data/test/sample-bad.csv` — kopia `data/processed/sample-clean.csv` z trzema celowymi błędami.
+
+## Wprowadzone błędy i oczekiwane kontrole
+
+1. Zduplikowane ID w drugim rekordzie danych (to samo co w pierwszym).
+   Oczekiwane: `FAIL  ID niepuste i unikalne: 24 unikalnych ID, 0 pustych, 1 duplikatów`.
+2. Cena `500` PLN w trzecim rekordzie danych.
+   Oczekiwane: `FAIL  Zakresy wartości: price_pln: 1 poza 1000-5000000`.
+3. Data `2026-13-40T99:99:99Z` w czwartym rekordzie danych.
+   Oczekiwane: `FAIL  Format daty created_at: 1 niepoprawnych dat`.
+
+Pozostałe kontrole powinny zakończyć się wynikiem `PASS`.
+
+## Oczekiwane podsumowanie
+
+```text
+Kontrole: 7 PASS, 3 FAIL
+Wynik: FAIL
+```
+
+Kod wyjścia: `1`.
+
+## Uzyskany wynik
+
+Pełny log znajduje się w `data/test/quality_checks-bad.log`.
