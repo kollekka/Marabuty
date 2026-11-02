@@ -61,9 +61,22 @@ Pytania otwarte:
 
 ## Wymagania
 
-- szybka orientacyjna wycena ceny w PLN na podstawie parametrów pojazdu,
-- przedział niepewności przy każdej prognozie,
-- ocena oferty względem prognozy: poniżej, w okolicach lub powyżej,
-- ranking cech najsilniej wpływających na cenę,
-- czytelna obsługa błędnych lub niekompletnych danych wejściowych,
-- jakość modelu lepsza niż prosty punkt odniesienia.
+| ID | Wymaganie | Kryterium sprawdzenia | Źródło lub uzasadnienie | Status | Osoba |
+|---|---|---|---|---|---|
+| R1 | Użytkownik szybko otrzymuje orientacyjną cenę rynkową po podaniu parametrów pojazdu. | Dla poprawnych danych z formularza aplikacja zwraca prognozę ceny w PLN w kilka sekund. | Karta projektu, pkt 4 i 7. | potwierdzone | Bartłomiej Taper |
+| R2 | Prognoza jest przedstawiona z przedziałem niepewności, a nie jako jedna liczba. | Każda prognoza zawiera dolną i górną granicę przedziału widoczną w interfejsie. | Karta projektu, pkt 4; ryzyko cen ofertowych i migawki. | potwierdzone | Kacper Stopa |
+| R3 | Użytkownik widzi, czy podana cena ofertowa jest poniżej, w okolicach czy powyżej prognozy. | Aplikacja porównuje cenę ofertową z prognozą i wyświetla jedną z trzech etykiet. | Karta projektu, pkt 4. | potwierdzone | Bartłomiej Taper |
+| R4 | Użytkownik poznaje cechy najsilniej wpływające na cenę. | Raport i aplikacja pokazują ranking ważności cech oraz wykres dla co najmniej trzech porównanych metod. | Karta projektu, pkt 4, 6 i 7. | potwierdzone | Kacper Stopa |
+| R5 | Aplikacja czytelnie obsługuje błędne lub niekompletne dane wejściowe. | Formularz pokazuje błąd walidacji, a API zwraca 422 dla niepoprawnych danych i prognozę dla poprawnych. | Karta projektu, pkt 7 i 8. | potwierdzone | Adrian Świeca |
+| R6 | Wycena jest wystarczająco dokładna, by wspierać decyzję użytkownika. | Model na zbiorze testowym osiąga lepsze MAE, RMSE i R² niż mediana ceny dla marki i modelu oraz MAPE nie przekracza ok. 15%. | Karta projektu, pkt 7; próg MAPE jest założeniem. | założenie | Kacper Stopa |
+
+## Potrzeby informacyjne
+
+| Informacja | Do czego | Minimalny zakres | Format/częstotliwość | Czy dostępna (tak/częściowo/nie) |
+|---|---|---|---|---|
+| Cena ofertowa i podstawowe parametry pojazdu | trenowanie modelu i generowanie prognozy | cena w PLN oraz marka, model, rok, przebieg, silnik, paliwo, skrzynia i nadwozie | CSV, jedna migawka | tak; 233 040 rekordów i 103 kolumny w `data/full-2026-11-01.csv` |
+| Wyposażenie pojazdu | analiza ważności cech i poprawa prognozy | flagi `has_*`/`is_*`, m.in. klimatyzacja, tempomat, kamera i nawigacja | CSV, jedna migawka | częściowo; dane są deklaracjami sprzedawcy, np. `has_cruise` ma 34,98% braków, a `has_alloy_wheels` 41,72% |
+| Lokalizacja oferty | uwzględnienie różnic rynku lokalnego | `city` i `region` | CSV, jedna migawka | tak; `district` ma 73,23% braków, więc nie jest wymagany |
+| Ceny transakcyjne | sprawdzenie, czy prognoza odpowiada rzeczywistym cenom | finalne ceny sprzedaży dla próby ogłoszeń | brak | nie; dostępne są wyłącznie ceny ofertowe |
+| Historia cen w czasie | ocena aktualności wyceny i zmian cen | co najmniej dwie migawki w odstępie czasu | cykliczny eksport | nie; dostępna jest jedna migawka z 2026-11-01 |
+| Warunki wykorzystania danych Otomoto | ocena zgodności publikacji prototypu z regulaminem | regulamin serwisu i zasady publikacji danych | dokumentacja, jednorazowo | częściowo; `robots.txt` i regulamin sprawdzono wstępnie, publikacja nie jest potwierdzona |
