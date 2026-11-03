@@ -196,14 +196,14 @@ Różnice mieszczą się w tolerancji przyjętej dla zaokrągleń. Oznacza to, �
 
 | Narzędzie | Do czego użyto | Co zweryfikowano |
 |---|---|---|
-| Asystent AI (opencode) | Redakcja i uporządkowanie sekcji C1–C4, propozycja listy kontroli w `check_results.py`, pomoc w zapisie wzorów i języka dokumentacji. | Wszystkie liczby pochodzą z niezależnego obliczenia C1 i plików `results/lab4/`; skrypt kontroli uruchomiono na obu katalogach i na kopii z błędem. Źródeł literaturowych nie generowano ponownie — pozostały w sekcji Osoby A. |
-| Asystent AI (opencode) | Sprawdzenie spójności nagłówków, tabel i poleceń uruchomienia. | Porównano nagłówki z szablonem, uruchomiono `check_results.py`, sprawdzono kod wyjścia i brak zmian w plikach A i B. |
+| Asystent AI (opencode) | Redakcja i uporządkowanie sekcji C1–C4, propozycja listy kontroli w `check_results.py`, pomoc w zapisie wzorów i języka dokumentacji. | Wszystkie liczby pochodzą z niezależnego obliczenia C1 i plików `results/lab4/`; skrypt kontroli uruchomiono na obu katalogach i na kopii z błędem. Źródeł literaturowych nie generowano ponownie — pozostały w sekcji. |
+| Asystent AI (opencode) | Sprawdzenie spójności nagłówków, tabel i poleceń uruchomienia. | Porównano nagłówki z szablonem, uruchomiono `check_results.py`, sprawdzono kod wyjścia i brak zmian w plikach. |
 
 AI nie było źródłem danych ani wyników. Nie tworzono nowych publikacji ani nie zmieniano parametrów po obejrzeniu wyników.
 
 ## Odtworzenie
 
-A4 wykonano 2026-11-02 na commitcie `docs: README Lab 4` (ostatni commit Osoby B). Użyto `.venv` z Pythonem 3.13.5, pandas 3.1.0 i scikit-learn 1.9.1. Uruchomiono dokładnie polecenia z README Osoby B:
+A4 wykonano 2026-11-02 na commitcie `docs: README Lab 4`. Użyto `.venv` z Pythonem 3.13.5, pandas 3.1.0 i scikit-learn 1.9.1. Uruchomiono dokładnie polecenia z README Osoby B:
 
 ```powershell
 python scripts/compare_methods.py data/processed/sample-clean.csv --output-dir results/lab4 --test-size 0.2 --seed 42
@@ -219,7 +219,7 @@ Wyniki na teście:
 | 70/30 | baseline | 17 | 8 | 135 692,44 | 280 966,13 | −0,1587 | 137,49 |
 | 70/30 | ridge | 17 | 8 | 20 386,01 | 30 384,92 | 0,9864 | 25,84 |
 
-Odtworzenie jest zgodne z wynikami Osoby B: wszystkie cztery pliki (`results/lab4/comparison.csv`, `results/lab4/observations.csv`, `results/lab4/sensitivity/comparison.csv`, `results/lab4/sensitivity/observations.csv`) są identyczne co do bajtu (zgodne sumy SHA256). Różnica metryk wynosi 0, więc przyjęta tolerancja została spełniona.
+Odtworzenie jest zgodne z wynikami: wszystkie cztery pliki (`results/lab4/comparison.csv`, `results/lab4/observations.csv`, `results/lab4/sensitivity/comparison.csv`, `results/lab4/sensitivity/observations.csv`) są identyczne co do bajtu (zgodne sumy SHA256). Różnica metryk wynosi 0, więc przyjęta tolerancja została spełniona.
 
 ### Wnioski
 
