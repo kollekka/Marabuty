@@ -227,6 +227,64 @@ sequenceDiagram
 
 Komunikaty wymagające kontraktu interfejsu: `POST /predict` i pola żądania, ustawienie `new_used="Używane"` po stronie API, pola odpowiedzi `estimated_price_pln`, `prediction_interval_pln`, `asking_price_pln`, `comparison`, `currency`, `method`, `model_version`, `data_version` oraz kody `400`, `422`, `503`, `500`. Zapis jest poza MVP (ADR-001); blok `opt` pokazuje wyłącznie wymaganą reakcję, gdyby historia wycen została dodana.
 
+### Przepływ danych
+
+Źródło: [`docs/diagrams/dataflow.mmd`](diagrams/dataflow.mmd). To schemat przepływu danych, a nie formalny DFD ani diagram sekwencji.
+
+```mermaid
+flowchart LR
+    User["Użytkownik"]
+    Otomoto["Otomoto / OLX<br/>źródło migawki"]
+
+    subgraph Offline["Offline — przygotowanie danych i modelu"]
+        Raw["data/full-2026-11-01.csv<br/>ISTNIEJE: 233 040 rekordów, 103 kolumny"]
+        Prep["prepare_data.py<br/>ISTNIEJE"]
+        Checks["quality_checks.py<br/>ISTNIEJE"]
+        Clean["data/processed/*.csv<br/>ISTNIEJE: 25 rekordów; pełny plik PLANOWANY"]
+        Train["Trening pełnego modelu<br/>PLANOWANY"]
+        Bundle["price-ridge.joblib + manifest.json<br/>PLANOWANE"]
+        Compare["compare_methods.py<br/>ISTNIEJE"]
+        Lab4["results/lab4/*.csv<br/>ISTNIEJE"]
+    end
+
+    subgraph Online["Online — pojedyncza wycena w API"]
+        UI["Formularz React<br/>PLANOWANY"]
+        API["FastAPI POST /predict<br/>ISTNIEJE"]
+        Validator["Walidator PredictRequest<br/>ISTNIEJE"]
+        Runtime["PredictionRuntime<br/>ISTNIEJE — czeka na artefakt"]
+        Pipeline["Pipeline Ridge<br/>PLANOWANY"]
+        Calibrator["IntervalCalibrator<br/>PLANOWANY"]
+        Comparator["OfferComparator<br/>ISTNIEJE w endpointcie"]
+        NoStore["Brak zapisu w MVP<br/>ADR-001"]
+    end
+
+    Otomoto -.->|"eksport CSV: 103 kolumny"| Raw
+    Raw -->|"CSV: id, created_at, make, model, ..., price_pln, new_used"| Prep
+    Prep -->|"CSV: 81 kolumn, 0 braków"| Checks
+    Checks -->|"CSV po PASS"| Clean
+    Clean -->|"CSV: tylko new_used=Używane"| Train
+    Train -->|"joblib + JSON: manifest z wersjami i cechami"| Bundle
+    Clean -->|"CSV: 25 rekordów, podział 80/20 lub 70/30"| Compare
+    Compare -->|"CSV: comparison.csv i observations.csv"| Lab4
+    User -->|"parametry auta i asking_price_pln"| UI
+    UI -->|"JSON: make, model, year, mileage_km, ..., asking_price_pln"| API
+    API -->|"JSON"| Validator
+    Validator -->|"cechy + new_used=Używane"| Runtime
+    Bundle -->|"joblib + manifest"| Runtime
+    Runtime -->|"DataFrame cech"| Pipeline
+    Pipeline -->|"prognoza punktowa w PLN"| Calibrator
+    Calibrator -->|"lower_pln, upper_pln"| Comparator
+    Comparator -->|"below_estimate / around_estimate / above_estimate"| API
+    API -->|"JSON: prognoza, przedział, etykieta, wersje"| UI
+    UI -->|"cena, przedział i ocena oferty"| User
+    API -.->|"brak zapisu"| NoStore
+    Lab4 -.->|"raport ewaluacji"| User
+```
+
+Formaty na strzałkach: CSV źródłowy ma 103 kolumny (`id`, `created_at`, `make`, `model`, ..., `price_pln`, `new_used`), plik po przetworzeniu ma 81 kolumn i 0 braków, a żądanie i odpowiedź API są w JSON. Model ma być trenowany wyłącznie na `new_used = "Używane"`.
+
+Świeżość danych: odbiorca API poznaje datę migawki z `data_version` w odpowiedzi i manifeście (np. `otomoto-2026-11-01`), a wersję modelu z `model_version`. Data pliku źródłowego jest też w nazwie `full-2026-11-01.csv`. Pliki `results/lab4/*.csv` nie zawierają obecnie `data_version` ani `generated_at`, więc odbiorca raportu nie zna daty odświeżenia — to luka opisana w zgłoszeniu implementacyjnym.
+
 ## Spójność z Lab 3–4 — przegląd A5
 
 - Nazwy cech i jednostki w żądaniu pochodzą ze słownika danych: przebieg w km, pojemność w cm³, moc w KM, rok jako liczba całkowita. `price_pln` pozostaje celem, a wejściowa cena ofertowa ma osobną nazwę `asking_price_pln`.

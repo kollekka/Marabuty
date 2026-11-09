@@ -1,0 +1,47 @@
+flowchart LR
+    User["Użytkownik"]
+    Otomoto["Otomoto / OLX<br/>źródło migawki"]
+
+    subgraph Offline["Offline — przygotowanie danych i modelu"]
+        Raw["data/full-2026-11-01.csv<br/>ISTNIEJE: 233 040 rekordów, 103 kolumny"]
+        Prep["prepare_data.py<br/>ISTNIEJE"]
+        Checks["quality_checks.py<br/>ISTNIEJE"]
+        Clean["data/processed/*.csv<br/>ISTNIEJE: 25 rekordów; pełny plik PLANOWANY"]
+        Train["Trening pełnego modelu<br/>PLANOWANY"]
+        Bundle["price-ridge.joblib + manifest.json<br/>PLANOWANE"]
+        Compare["compare_methods.py<br/>ISTNIEJE"]
+        Lab4["results/lab4/*.csv<br/>ISTNIEJE"]
+    end
+
+    subgraph Online["Online — pojedyncza wycena w API"]
+        UI["Formularz React<br/>PLANOWANY"]
+        API["FastAPI POST /predict<br/>ISTNIEJE"]
+        Validator["Walidator PredictRequest<br/>ISTNIEJE"]
+        Runtime["PredictionRuntime<br/>ISTNIEJE — czeka na artefakt"]
+        Pipeline["Pipeline Ridge<br/>PLANOWANY"]
+        Calibrator["IntervalCalibrator<br/>PLANOWANY"]
+        Comparator["OfferComparator<br/>ISTNIEJE w endpointcie"]
+        NoStore["Brak zapisu w MVP<br/>ADR-001"]
+    end
+
+    Otomoto -.->|"eksport CSV: 103 kolumny"| Raw
+    Raw -->|"CSV: id, created_at, make, model, ..., price_pln, new_used"| Prep
+    Prep -->|"CSV: 81 kolumn, 0 braków"| Checks
+    Checks -->|"CSV po PASS"| Clean
+    Clean -->|"CSV: tylko new_used=Używane"| Train
+    Train -->|"joblib + JSON: manifest z wersjami i cechami"| Bundle
+    Clean -->|"CSV: 25 rekordów, podział 80/20 lub 70/30"| Compare
+    Compare -->|"CSV: comparison.csv i observations.csv"| Lab4
+    User -->|"parametry auta i asking_price_pln"| UI
+    UI -->|"JSON: make, model, year, mileage_km, ..., asking_price_pln"| API
+    API -->|"JSON"| Validator
+    Validator -->|"cechy + new_used=Używane"| Runtime
+    Bundle -->|"joblib + manifest"| Runtime
+    Runtime -->|"DataFrame cech"| Pipeline
+    Pipeline -->|"prognoza punktowa w PLN"| Calibrator
+    Calibrator -->|"lower_pln, upper_pln"| Comparator
+    Comparator -->|"below_estimate / around_estimate / above_estimate"| API
+    API -->|"JSON: prognoza, przedział, etykieta, wersje"| UI
+    UI -->|"cena, przedział i ocena oferty"| User
+    API -.->|"brak zapisu"| NoStore
+    Lab4 -.->|"raport ewaluacji"| User
