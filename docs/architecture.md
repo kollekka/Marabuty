@@ -285,6 +285,20 @@ Formaty na strzałkach: CSV źródłowy ma 103 kolumny (`id`, `created_at`, `mak
 
 Świeżość danych: odbiorca API poznaje datę migawki z `data_version` w odpowiedzi i manifeście (np. `otomoto-2026-11-01`), a wersję modelu z `model_version`. Data pliku źródłowego jest też w nazwie `full-2026-11-01.csv`. Pliki `results/lab4/*.csv` nie zawierają obecnie `data_version` ani `generated_at`, więc odbiorca raportu nie zna daty odświeżenia — to luka opisana w zgłoszeniu implementacyjnym.
 
+### Zgłoszenia implementacyjne
+
+Zgłoszenia dla elementów przetwarzania i walidacji, których nie obejmują istniejące zadania A:
+
+| Issue | Zakres | Osoba |
+|---|---|---|
+| [#6](https://github.com/kollekka/Marabuty/issues/6) | Pełny przetworzony zbiór i wersjonowanie migawki | kollekka (Adrian Świeca) |
+| [#7](https://github.com/kollekka/Marabuty/issues/7) | Walidator danych treningowych | MrKabas (Kacper Stopa) |
+| [#8](https://github.com/kollekka/Marabuty/issues/8) | Metadane świeżości wyników | MrKabas (Kacper Stopa) |
+
+Elementy już istniejące (`prepare_data.py`, `quality_checks.py`, `compare_methods.py`, `results/lab4/`, `app/main.py`, `app/schemas.py`, `app/runtime.py`, ADR-001) nie mają osobnych zgłoszeń. Trening, kalibrator, integracja API i formularz są już objęte zgłoszeniami #1–#5.
+
+Przegląd pracy A (B4): [#9](https://github.com/kollekka/Marabuty/issues/9).
+
 ## Spójność z Lab 3–4 — przegląd A5
 
 - Nazwy cech i jednostki w żądaniu pochodzą ze słownika danych: przebieg w km, pojemność w cm³, moc w KM, rok jako liczba całkowita. `price_pln` pozostaje celem, a wejściowa cena ofertowa ma osobną nazwę `asking_price_pln`.
