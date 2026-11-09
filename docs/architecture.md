@@ -1,0 +1,212 @@
+# Architektura wyceny samochodów używanych
+
+## Zakres i granice systemu
+
+Projekt docelowo jest aplikacją webową: użytkownik korzysta z formularza React, a backend FastAPI udostępnia prognozę przez `POST /predict`. W repozytorium są obecnie skrypty analityczne Lab 3–4; frontend, API i model zapisany do ponownego użycia są planowane, a nie zaimplementowane.
+
+Otomoto/OLX jest źródłem migawki danych wykorzystywanej offline. Aplikacja nie odpytuje portalu podczas wyceny. Własny system obejmuje interfejs webowy, walidację żądania, usługę predykcji, artefakt modelu oraz odpowiedź API. Baza danych i historia pojedynczych wycen nie należą do zakresu MVP.
+
+| Element | Status | Odpowiedzialność |
+|---|---|---|
+| `scripts/prepare_data.py` | istnieje — Lab 3 | Czyści CSV, filtruje niepoprawne rekordy, ujednolica typy i zapisuje plik przetworzony. |
+| `scripts/quality_checks.py` | istnieje — Lab 3 | Sprawdza plik przetworzony: wymagane kolumny, typy, zakresy, format daty, klucze i flagi. Nie sprawdza ciągłości ani kolejności chronologicznej. |
+| `scripts/compare_methods.py` i `results/lab4/` | istnieją — Lab 4 | Porównują baseline z Ridge na podziale train/test i zapisują metryki oraz obserwacje testowe. Skrypt nie zapisuje modelu do późniejszej predykcji. |
+| Trening pełnego modelu i manifest | planowane | Trenuje model na pełnym przetworzonym zbiorze wyłącznie dla `new_used = Używane`; zapisuje artefakt i jego metadane. |
+| API FastAPI i walidacja żądania | planowane | Przyjmuje parametry auta i cenę ofertową, mapuje wynik predykcji lub błąd na odpowiedź HTTP. |
+| Formularz React | planowany | Zbiera dane auta i cenę oferty, pokazuje prognozę, przedział oraz ocenę ceny. |
+
+Pełny eksport `data/full-2026-11-01.csv` ma 233 040 rekordów. `data/processed/sample-clean.csv` ma 25 rekordów i służy do testów technicznych. W README opisano wynik przetworzenia pełnego eksportu (228 318 rekordów), ale pełny plik przetworzony nie znajduje się obecnie w repozytorium. Model z próbki 25 rekordów nie jest artefaktem produkcyjnym.
+
+## UC-01 — uzyskanie wyceny i ocena ceny oferty
+
+| Element | Opis |
+|---|---|
+| Cel i wymaganie | Kupujący lub sprzedający chce poznać orientacyjną cenę używanego samochodu i ocenić, czy cena z ogłoszenia jest poniżej, w granicach czy powyżej prognozowanego przedziału. Spełnia cel R1 i R3; przedział z R2 jest potrzebny do jednoznacznej interpretacji „w okolicach”. |
+| Wejście | Parametry pojazdu: `make`, `model`, `year`, `mileage_km`; opcjonalnie `engine_cc`, `engine_power_km`, `fuel_type`, `gearbox`, `transmission`, `body_type`, `region`; `asking_price_pln` — cena ofertowa w PLN. Dla tego przypadku `new_used` ma stałą wartość `Używane`. |
+| Warunek rozpoczęcia | Dostępny i zgodny ze schematem artefakt modelu wytrenowanego na pełnym zbiorze używanych aut oraz skalibrowany przedział niepewności. Użytkownik przekazuje poprawne parametry i dodatnią cenę ofertową. |
+| Przebieg | React wysyła żądanie JSON do `POST /predict` → FastAPI waliduje składnię i typy → usługa predykcji przygotowuje cechy i wylicza cenę → moduł przedziału wyznacza granice niepewności → moduł porównania zestawia `asking_price_pln` z przedziałem → API zwraca wynik. |
+| Wynik | Prognozowana cena (`estimated_price_pln`), przedział (`prediction_interval_pln.lower`, `prediction_interval_pln.upper`), ocena `below_estimate` / `around_estimate` / `above_estimate`, waluta PLN, identyfikator metody oraz wersje modelu i danych. |
+| Brak danych | Brak lub niepoprawna wartość wymaganego pola kończy żądanie błędem `422`; system nie wylicza ani nie pokazuje pozornej prognozy `0`. Brak lub niezgodność modelu albo brak kalibratora kończy żądanie błędem `503`. |
+| Kryterium odbioru | Dla poprawnego żądania API w czasie zgodnym z R1 zwraca skończoną dodatnią prognozę i granice przedziału w PLN, a ocena jest zgodna z porównaniem ceny ofertowej z przedziałem. Niepoprawne żądanie zwraca opis błędu bez prognozy. Test znanej próbki daje wynik odtwarzalny dla tej samej wersji artefaktu. |
+
+### Reguła R3
+
+Ocena ceny wynika z przedziału R2:
+
+- `asking_price_pln < lower_pln` → `below_estimate`;
+- `lower_pln <= asking_price_pln <= upper_pln` → `around_estimate`;
+- `asking_price_pln > upper_pln` → `above_estimate`.
+
+Metoda kalibracji i nominalny poziom pokrycia przedziału nie są jeszcze zaimplementowane ani ustalone. Do czasu walidacji tej metody API nie może deklarować, że R2 i R3 są spełnione. Wyniki Lab 4 są punktowe i pochodzą z próbki 25 rekordów; MAPE Ridge wynosiło 33,35% i 25,84%, więc próg ok. 15% z R6 nie został osiągnięty.
+
+## Odpowiedzialności modułów
+
+| Moduł | Status | Odpowiedzialność i błędy |
+|---|---|---|
+| Formularz React | planowany | Zbiera parametry auta i cenę oferty; pokazuje odpowiedź lub komunikat walidacji/API. Nie oblicza prognozy. |
+| FastAPI `POST /predict` | planowany | Weryfikuje JSON/Pydantic, wywołuje usługę, mapuje wyjątki na HTTP. Nie zwraca ceny zastępczej przy błędzie. |
+| Walidator `VehicleInput` | planowany | Sprawdza wymagane pola, typy, zakresy i dozwolony stan `Używane`; opcjonalne cechy mogą być puste i są przekazywane do preprocessora modelu. |
+| `ModelBundleLoader` | planowany | Wczytuje pipeline i manifest; sprawdza wersję schematu, cechy, metodę oraz obecność kalibratora. Brak lub niezgodność artefaktu oznacza `model_not_ready`. |
+| `PredictionService` | planowany | Przekazuje dokładne cechy modelu do pipeline'u, oblicza prognozę i sprawdza, czy wynik jest skończony i dodatni. Nie sprawdza kolejności dat. |
+| `IntervalCalibrator` | planowany | Wyznacza `lower_pln` i `upper_pln` dla prognozy. Metoda i poziom pokrycia wymagają osobnej implementacji i walidacji na pełnym zbiorze. |
+| `OfferComparator` | planowany | Porównuje `asking_price_pln` z granicami przedziału i zwraca jedną z trzech etykiet R3. |
+| `prepare_data.py`, `quality_checks.py` | istnieją — offline | Przygotowują i kontrolują zbiory treningowe. Obecna kontrola `created_at` sprawdza format ISO 8601, nie ciągłość ani sortowanie chronologiczne. |
+| `compare_methods.py` | istnieje — offline | Ewaluacja baseline/Ridge z losowym podziałem train/test; nie jest endpointem ani modułem prognozującym dla użytkownika. |
+
+UC-01 dotyczy pojedynczego samochodu, nie szeregu czasowego, więc nie wymaga ciągłości ani kolejności dat. Jeśli późniejszy trening będzie korzystał z podziału czasowego lub wielu migawek, kontrolę zakresów i porządku dat należy dodać do walidatora danych treningowych, a nie do predyktora.
+
+## Kontrakt interfejsu
+
+### Żądanie
+
+`POST /predict`, `Content-Type: application/json`.
+
+| Pole | Typ | Jednostka / reguła |
+|---|---|---|
+| `make` | string | Wymagane, niepuste. |
+| `model` | string | Wymagane, niepuste. |
+| `year` | integer | Wymagane; rok produkcji 1950–2027 dla migawki 2026. |
+| `mileage_km` | integer | Wymagane; km, 0–2 000 000. |
+| `engine_cc` | integer lub null | Opcjonalne; cm³, gdy podano 500–8 000. |
+| `engine_power_km` | integer lub null | Opcjonalne; KM, gdy podano 20–2 000. |
+| `fuel_type` | string lub null | Opcjonalne; nazwa kategorii ze schematu danych. |
+| `gearbox` | string lub null | Opcjonalne; `Manualna`, `Automatyczna` lub `Półautomatyczna`. |
+| `transmission` | string lub null | Opcjonalne; nazwa kategorii napędu ze schematu danych. |
+| `body_type` | string lub null | Opcjonalne; nazwa kategorii nadwozia. |
+| `region` | string lub null | Opcjonalne; województwo. |
+| `asking_price_pln` | number | Wymagane dla R3; cena ofertowa 1 000–5 000 000 PLN. |
+
+Usługa ustawia `new_used = "Używane"`; klient nie może wywołać tego przypadku dla `Nowość`. Brakujące opcjonalne cechy są przekazywane jako braki do imputera zapisanego w pipeline. Kategorie spoza słownika mogą być obsłużone przez `OneHotEncoder(handle_unknown="ignore")`, ale niepoprawny typ lub zakres powoduje błąd walidacji.
+
+### Sukces i błędy
+
+Przykładowa odpowiedź HTTP 200:
+
+```json
+{
+  "estimated_price_pln": 62500.0,
+  "prediction_interval_pln": {"lower": 57000.0, "upper": 69000.0},
+  "asking_price_pln": 64000.0,
+  "comparison": "around_estimate",
+  "currency": "PLN",
+  "method": "ridge_log_linear",
+  "model_version": "ridge-used-v1",
+  "data_version": "otomoto-2026-11-01"
+}
+```
+
+Przykładowe błędy: `400 invalid_json` dla niepoprawnej składni JSON; `422 invalid_vehicle_input` dla braku, typu lub zakresu pola; `503 model_not_ready` dla brakującego, niezgodnego lub niekompletnego artefaktu; `500 prediction_failed` dla nieskończonego, nieliczbowego lub niedodatniego wyniku. Odpowiedź błędu zawiera `error` i opis pola/przyczyny, ale nie zawiera ceny.
+
+## Model danych i zapis fizyczny
+
+| Obiekt | Pola / znaczenie | Zapis |
+|---|---|---|
+| `VehicleInput` | Cechy auta zgodne z tabelą żądania oraz `asking_price_pln`; `new_used` ustawione przez serwer na `Używane`. | JSON żądania HTTP; pojedyncza obserwacja wejściowa. |
+| `PriceEstimate` | `estimated_price_pln`, granice przedziału, `asking_price_pln`, etykieta R3, waluta, metoda i wersje artefaktów. | JSON odpowiedzi HTTP; nie jest zapisywany jako historia w MVP. |
+| `ModelBundle` | Wytrenowany preprocessing + Ridge oraz kalibrator przedziału. | Planowany `models/price-ridge.joblib`. |
+| `ModelManifest` | `model_version`, `data_version`, data treningu, zakres tylko `Używane`, target `price_pln`, lista cech i typy, transformacja `log1p`/`expm1`, metoda/parametry Ridge, metoda i poziom pokrycia przedziału. | Planowany `models/manifest.json`. |
+| Wyniki ewaluacji | Metryki baseline/Ridge i obserwacje testowe Lab 4. | Istniejące CSV w `results/lab4/`; nie są wynikami użytkownika ani artefaktem modelu. |
+
+Pola cech w modelu muszą zachować nazwy ze słownika: `make`, `model`, `year`, `mileage_km`, `engine_cc`, `engine_power_km`, `fuel_type`, `gearbox`, `transmission`, `body_type`, `new_used`, `region`. `price_pln` jest celem uczenia; dla żądania R3 oddzielna nazwa `asking_price_pln` zapobiega pomyleniu ceny oferty z celem modelu. W obecnym skrypcie Ridge `city` nie jest predyktorem.
+
+## Diagram granic i przepływu danych
+
+Diagram jest edytowalny jako Mermaid w tym pliku. Prostokąt oznacza własne rozwiązanie; Otomoto jest wyłącznie źródłem danych offline.
+
+```mermaid
+flowchart LR
+    User["Kupujący / sprzedający"]
+    Otomoto["Otomoto / OLX<br/>źródło migawek"]
+
+    subgraph Offline["Własny system — przygotowanie i ewaluacja offline"]
+        Raw["data/full-2026-11-01.csv"]
+        Prep["prepare_data.py<br/>ISTNIEJE"]
+        Checks["quality_checks.py<br/>ISTNIEJE"]
+        Clean["data/processed/*.csv"]
+        Compare["compare_methods.py<br/>ISTNIEJE"]
+        Lab4["results/lab4/*.csv<br/>ISTNIEJE"]
+        Train["Trening pełnego modelu<br/>PLANOWANY"]
+        Bundle["price-ridge.joblib<br/>manifest.json<br/>PLANOWANE"]
+        Raw -->|"CSV: ogłoszenia źródłowe"| Prep
+        Prep -->|"CSV: rekordy przetworzone"| Checks
+        Checks -->|"CSV po PASS"| Clean
+        Clean -->|"CSV do ewaluacji"| Compare
+        Compare -->|"metryki i błędy testowe CSV"| Lab4
+        Clean -->|"pełne dane tylko Używane"| Train
+        Train -->|"pipeline + metadane wersji"| Bundle
+    end
+
+    subgraph Web["Własny system — aplikacja webowa, PLANOWANA"]
+        UI["React: formularz i wynik"]
+        API["FastAPI: POST /predict"]
+        Validator["Walidator VehicleInput"]
+        Service["PredictionService"]
+        Loader["ModelBundleLoader"]
+        Estimator["Pipeline Ridge<br/>PLANOWANY"]
+        Interval["IntervalCalibrator + OfferComparator"]
+        UI -->|"JSON: parametry auta + asking_price_pln"| API
+        API -->|"żądanie"| Validator
+        Validator -->|"poprawne cechy, new_used=Używane"| Service
+        Bundle -->|"artefakt modelu"| Loader
+        Loader -->|"zgodny pipeline"| Estimator
+        Service -->|"cechy modelu"| Estimator
+        Estimator -->|"prognoza punktowa"| Interval
+        Interval -->|"przedział + etykieta R3"| API
+        API -->|"JSON: prognoza albo błąd HTTP"| UI
+    end
+
+    Otomoto -.->|"eksport migawki; poza runtime"| Raw
+    User -->|"parametry auta i cena oferty"| UI
+    UI -->|"wycena i ocena oferty"| User
+```
+
+## Diagram sekwencji UC-01
+
+```mermaid
+sequenceDiagram
+    actor U as Kupujący / sprzedający
+    participant UI as React
+    participant API as FastAPI POST /predict
+    participant V as Walidator VehicleInput
+    participant P as PredictionService
+    participant M as ModelBundle + IntervalCalibrator
+    participant C as OfferComparator
+
+    U->>UI: parametry auta + asking_price_pln
+    UI->>API: POST /predict (JSON)
+    API->>V: waliduj pola, typy i zakresy
+    alt niepoprawne żądanie
+        V-->>API: InvalidVehicleInput
+        API-->>UI: HTTP 422, błąd bez prognozy
+        UI-->>U: komunikat o niepoprawnym polu
+    else żądanie poprawne
+        V-->>P: VehicleInput (new_used=Używane)
+        P->>M: oblicz prognozę i przedział
+        alt brak lub niezgodny model/kalibrator
+            M-->>P: ModelNotReady
+            P-->>API: błąd gotowości modelu
+            API-->>UI: HTTP 503, bez prognozy
+            UI-->>U: informacja o niedostępnej wycenie
+        else wynik poprawny i skończony
+            M-->>P: estimated_price_pln, lower_pln, upper_pln
+            P->>C: porównaj asking_price_pln z przedziałem
+            C-->>P: below_estimate / around_estimate / above_estimate
+            P-->>API: PriceEstimate + wersje modelu i danych
+            API-->>UI: HTTP 200, JSON z prognozą i oceną
+            UI-->>U: cena, przedział i ocena ceny oferty
+        end
+    end
+```
+
+W ścieżce UC-01 nie ma zapisu prognozy. Awaria zapisu nie może więc skutkować fałszywym potwierdzeniem zapisu; odpowiedź HTTP oznacza jedynie, że wynik został obliczony i zwrócony. Gdyby później dodano historię, zapis musi być osobnym kontraktem z jednoznaczną obsługą błędu.
+
+## Spójność z Lab 3–4 — przegląd A5
+
+- Nazwy cech i jednostki w żądaniu pochodzą ze słownika danych: przebieg w km, pojemność w cm³, moc w KM, rok jako liczba całkowita. `price_pln` pozostaje celem, a wejściowa cena ofertowa ma osobną nazwę `asking_price_pln`.
+- Ridge w `scripts/compare_methods.py` używa czterech cech liczbowych oraz `make`, `model`, `fuel_type`, `gearbox`, `transmission`, `body_type`, `new_used` i `region`. Nie używa `city`; architektura również go nie deklaruje jako wejścia UC-01.
+- Zbiór i UC-01 są ograniczone do aut `Używane`. Obecny preprocessing nie filtruje `new_used`, dlatego przyszły trening pełnego artefaktu musi jawnie zastosować ten filtr. Wyników Lab 4 z próbki nie należy przedstawiać jako wyniku modelu trenowanego tylko na autach używanych.
+- Lab 4 zwraca prognozę punktową; nie zawiera kalibracji przedziału. R2/R3 pozostają niegotowe do implementacji produkcyjnej, dopóki metoda i pokrycie przedziału nie zostaną wybrane oraz ocenione na pełnych danych.
+- Wymaganie R4 mówi o co najmniej trzech porównanych metodach i rankingu cech; obecne wyniki Lab 4 obejmują baseline i Ridge, bez rankingu ważności. Rozszerzenie jest zadaniem do implementacji, nie istniejącym elementem.
+- Obecne `quality_checks.py` sprawdza format `created_at`, nie ciągłość ani kolejność. Dla pojedynczego wejścia samochodu nie jest to potrzebne; ewentualna kontrola chronologii należy do walidacji danych treningowych.
+- R5 nie jest jeszcze spełnione przez API: FastAPI nie ma w repozytorium, a `quality_checks.py` waliduje plik CSV, nie żądanie użytkownika ani kod HTTP 422.
+- Obsługa brakujących lub niepoprawnych danych użytkownika należy do walidatora API. Istniejące kontrole jakości dotyczą plików CSV i nie zastępują walidacji żądania.
