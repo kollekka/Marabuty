@@ -1,0 +1,81 @@
+erDiagram
+    DATA_SNAPSHOT {
+        string data_version PK
+        string source_file
+        string input_sha256
+        int row_count
+        int column_count
+        string snapshot_date
+    }
+
+    LISTING {
+        int id PK
+        string created_at
+        string make
+        string model
+        int year
+        int mileage_km
+        int price_pln
+        string new_used
+    }
+
+    PROCESSED_LISTING {
+        int id PK
+        string make
+        string model
+        int year
+        int mileage_km
+        int price_pln
+        string new_used
+    }
+
+    MODEL_MANIFEST {
+        string model_version PK
+        string data_version FK
+        string method
+        string target_transform
+        string scope
+        string interval_method
+        float interval_coverage
+    }
+
+    MODEL_BUNDLE {
+        string model_version PK, FK
+    }
+
+    EVALUATION_RUN {
+        string run_id PK
+        string data_version FK
+        float test_size
+        int seed
+        float alpha
+        string code_commit
+        string created_at
+    }
+
+    EVALUATION_RESULT {
+        string run_id PK, FK
+        string method PK
+        float mae_pln
+        float rmse_pln
+        float r2
+        float mape_pct
+    }
+
+    TEST_OBSERVATION {
+        string run_id PK, FK
+        int row_index PK
+        int id FK
+        float price_pln
+        float model_pred_pln
+        float model_ape_pct
+    }
+
+    DATA_SNAPSHOT ||--o{ LISTING : "zawiera"
+    LISTING ||--o| PROCESSED_LISTING : "po czyszczeniu"
+    DATA_SNAPSHOT ||--o{ MODEL_MANIFEST : "wersja danych"
+    MODEL_MANIFEST ||--|| MODEL_BUNDLE : "artefakt"
+    DATA_SNAPSHOT ||--o{ EVALUATION_RUN : "używa"
+    EVALUATION_RUN ||--o{ EVALUATION_RESULT : "wyniki"
+    EVALUATION_RUN ||--o{ TEST_OBSERVATION : "obserwacje"
+    PROCESSED_LISTING ||--o{ TEST_OBSERVATION : "jest testowane"
