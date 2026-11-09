@@ -37,6 +37,7 @@ results/
         run.json
         comparison.csv
         observations.csv
+        forecast.csv                  # opcjonalny eksport pojedynczej wyceny
 ```
 
 ## `models/manifest.json`
@@ -102,18 +103,20 @@ Przykład:
 
 Uwagi:
 
-- `schema_version`, `trained_at`, `training_rows`, `input_sha256`, `source_file`, `snapshot_date`, `row_count`, `column_count` i `code_commit` są metadanymi dodatkowymi; obecny `PredictionRuntime.from_files` ich nie wymaga. Dodanie ich do wymagań runtime jest zadaniem z #11.
+- `schema_version`, `trained_at`, `training_rows`, `input_sha256`, `source_file`, `snapshot_date`, `row_count`, `column_count` i `code_commit` są metadanymi dodatkowymi; obecny `PredictionRuntime.from_files` ich nie wymaga. Walidacja tych pól w manifeście i plikach wynikowych należy do #11; runtime nie musi ich wymagać.
 - Przykładowe `interval_method` i `interval_coverage` pokazują format, a nie wybraną metodę. Metoda i pokrycie przedziału są przedmiotem #4.
 
 ## `results/runs/<data_version>/<run_id>/run.json`
 
-`run.json` opisuje jedno uruchomienie analizy. Jest niezbędny, żeby odbiorca wyników znał wersję danych, parametry i datę uruchomienia.
+`run.json` opisuje jedno uruchomienie analizy. Jest niezbędny, żeby odbiorca wyników znał wersję danych, metody, parametry i datę uruchomienia.
 
 | Pole | Typ | Reguła |
 |---|---|---|
 | `schema_version` | string | Wersja kontraktu, np. `1.0`. |
 | `run_id` | string | Unikalny; format `YYYYMMDDTHHMMSSZ-<8 hex>` albo równoważny. |
 | `data_version` | string | Wskazuje migawkę, np. `otomoto-2026-11-01`. |
+| `method` | string | Metoda główna, np. `ridge_log_linear`. |
+| `methods` | array[string] | Porównywane metody, np. `["baseline", "ridge"]`; niepusta lista. |
 | `input_path` | string | Ścieżka względna do pliku wejściowego. |
 | `input_sha256` | string | SHA256 pliku wejściowego, 64 znaki hex. |
 | `test_size` | number | `0 < test_size < 1`. |
@@ -121,7 +124,7 @@ Uwagi:
 | `alpha` | number | `> 0`; parametr Ridge. |
 | `code_commit` | string | Commit skryptu, który wykonał analizę. |
 | `created_at` | string | Data uruchomienia w ISO 8601 UTC. |
-| `outputs` | object | Ścieżki do `comparison.csv` i `observations.csv`. |
+| `outputs` | object | Ścieżki do `comparison.csv` i `observations.csv`; opcjonalnie `forecast` → `forecast.csv`. |
 | `status` | string | `completed` albo `failed`. |
 
 Przykład:
@@ -131,6 +134,8 @@ Przykład:
   "schema_version": "1.0",
   "run_id": "20261109T120000Z-3f2a1c9d",
   "data_version": "otomoto-2026-11-01",
+  "method": "ridge_log_linear",
+  "methods": ["baseline", "ridge"],
   "input_path": "data/processed/sample-clean.csv",
   "input_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
   "test_size": 0.2,
@@ -140,11 +145,14 @@ Przykład:
   "created_at": "2026-11-09T12:00:00Z",
   "outputs": {
     "comparison": "comparison.csv",
-    "observations": "observations.csv"
+    "observations": "observations.csv",
+    "forecast": "forecast.csv"
   },
   "status": "completed"
 }
 ```
+
+Pole `outputs.forecast` jest opcjonalne; pojawia się tylko wtedy, gdy `forecast.csv` został wygenerowany.
 
 ## `comparison.csv`
 
@@ -183,6 +191,20 @@ Jeden wiersz to jedna obserwacja testowa w jednym uruchomieniu. Klucz główny: 
 | `baseline_ape_pct` | number | % | `>= 0`. |
 | `model_ape_pct` | number | % | `>= 0`. |
 
+## `forecast.csv` (opcjonalny)
+
+To opcjonalny eksport **pojedynczej wyceny**, a nie historia wycen ani prognoza szeregu czasowego. Powstaje tylko wtedy, gdy prowadzący lub odbiorca wymaga takiego pliku; nie jest częścią MVP. Jeden wiersz oznacza jedną wycenę.
+
+| Kolumna | Typ | Jednostka | Reguła |
+|---|---|---|---|
+| `data` | string | — | Data wyceny w ISO 8601 UTC. |
+| `wartosc` | number | PLN | Skończona, dodatnia prognoza. |
+| `jednostka` | string | — | Dokładnie `PLN`. |
+| `model_version` | string | — | Opcjonalna wersja modelu. |
+| `data_version` | string | — | Opcjonalna wersja danych. |
+
+Plik trafia do katalogu `results/runs/<data_version>/<run_id>/` i podlega tej samej zasadzie braku nadpisań co pozostałe wyniki. Nie jest historią wycen ani serią czasową; podstawowymi wynikami pozostają `comparison.csv` i `observations.csv`.
+
 ## `data/processed/sample-clean.csv`
 
 - 25 wierszy × 81 kolumn; wynik `scripts/prepare_data.py` z `data/raw/sample.csv`.
@@ -197,9 +219,9 @@ Jeden wiersz to jedna obserwacja testowa w jednym uruchomieniu. Klucz główny: 
 1. **Migawka źródłowa jest niezmienna.** `data/full-2026-11-01.csv` ma w nazwie datę migawki. Nowe pobranie dostaje nową nazwę i nowy `data_version`; nie nadpisuje starego pliku.
 2. **Plik przetworzony jest odtwarzalny.** Dla tej samej migawki i tej samej wersji skryptu wynik powinien mieć identyczny SHA256. Nowa wersja danych dostaje nową nazwę, np. `full-2026-12-01.csv`; nie nadpisuje `full-2026-11-01.csv`.
 3. **Wersja modelu jest niezmienna.** `model_version` w manifeście identyfikuje artefakt. Nowy model dostaje nowy `model_version`; aktywny zestaw w `models/` jest podmieniany atomowo, a poprzedni trafia do archiwum `models/archive/<model_version>/`.
-4. **Wyniki trafiają do unikalnego katalogu runu.** Nowy format to `results/runs/<data_version>/<run_id>/`. Jeśli katalog `run_id` już istnieje, skrypt kończy się błędem i nie nadpisuje plików. `run_id` zawiera czas i skrót parametrów, np. `20261109T120000Z-3f2a1c9d`.
+4. **Wyniki trafiają do unikalnego katalogu runu.** Nowy format to `results/runs/<data_version>/<run_id>/` z `run.json`, `comparison.csv`, `observations.csv` i opcjonalnym `forecast.csv`. Jeśli katalog `run_id` już istnieje, skrypt kończy się błędem i nie nadpisuje plików. `run_id` zawiera czas i skrót parametrów, np. `20261109T120000Z-3f2a1c9d`.
 5. **Zapis jest atomowy.** Pliki powstają jako `*.tmp`, a po poprawnym zapisie są przenoszone przez `os.replace`. Nie zapisujemy bezpośrednio do pliku docelowego.
-6. **Metadane wiążą wynik z wejściem.** `run.json` zawiera `input_sha256`, `data_version`, `code_commit` i `created_at`; manifest zawiera `model_version`, `data_version` i `input_sha256`.
+6. **Metadane wiążą wynik z wejściem.** `run.json` zawiera `input_sha256`, `data_version`, `method`, `methods`, `code_commit` i `created_at`; manifest zawiera `model_version`, `data_version` i `input_sha256`.
 7. **Stan obecny.** `results/lab4/` jest stałym katalogiem z Lab 4 i nie ma `run.json`; ponowne uruchomienie z tym samym `--output-dir` nadpisuje `comparison.csv` i `observations.csv`. To luka opisana w #8; nowe uruchomienia powinny korzystać z `results/runs/`.
 
 ## Walidacja, której nie da się wymusić w CSV/JSON
@@ -215,18 +237,18 @@ Pliki CSV i JSON nie mają kluczy obcych, transakcji ani typów wymuszanych prze
 - relację `observations.id` → `ProcessedListing.id`,
 - zakresy i flagi `0/1` w danych przetworzonych,
 - `lower_pln <= estimated_price_pln <= upper_pln` w odpowiedzi API,
+- poprawność opcjonalnego `forecast.csv`: data ISO 8601, `wartosc` skończona i dodatnia, `jednostka = PLN`,
 - brak braków w pliku przetworzonym i wynikach.
 
-Istniejące kontrole: `scripts/prepare_data.py` (czyszczenie i zakresy), `scripts/quality_checks.py` (10 kontroli pliku przetworzonego), `scripts/compare_methods.py` (wymagane kolumny, braki, ceny dodatnie) oraz `app/schemas.py` i `app/runtime.py` (walidacja żądania i wyniku). Luki: brak walidacji manifestu, `run.json`, unikalności kluczy wyników i skończoności liczb w CSV — zadanie #11.
+Istniejące kontrole: `scripts/prepare_data.py` (czyszczenie i zakresy), `scripts/quality_checks.py` (10 kontroli pliku przetworzonego), `scripts/compare_methods.py` (wymagane kolumny, braki, ceny dodatnie) oraz `app/schemas.py` i `app/runtime.py` (walidacja żądania i wyniku). Luki: brak walidacji manifestu, `run.json`, opcjonalnego `forecast.csv`, unikalności kluczy wyników i skończoności liczb w CSV — zadanie #11.
 
-## Odpowiednik `forecast.csv`
+## Mapowanie wymagań C2 na pliki
 
-UC-01 nie jest prognozą szeregu czasowego: dotyczy jednego samochodu i jednej migawki, więc **nie tworzymy `forecast.csv` z kolumnami `data`, `wartość`, `jednostka`**. Odpowiednikiem wyniku analizy są `comparison.csv` (metryki metod) i `observations.csv` (predykcje dla wierszy testowych).
+| Wymóg C2 | Plik | Status |
+|---|---|---|
+| wersja danych, metoda, parametry | `run.json` | wymagany dla nowego runu |
+| data, wartość, jednostka | `forecast.csv` | opcjonalny eksport pojedynczej wyceny |
+| metryki porównywanych metod | `comparison.csv` | podstawowy wynik runu porównawczego |
+| predykcje dla wierszy testowych | `observations.csv` | podstawowy wynik runu porównawczego |
 
-Gdyby prowadzący wymagał pliku `forecast.csv`, można dodać opcjonalny `predictions.csv` w katalogu runu:
-
-```text
-created_at,listing_id,estimated_price_pln,lower_pln,upper_pln,currency,model_version,data_version
-```
-
-Byłby to eksport predykcji, a nie historia wycen ani prognoza zmian cen w czasie. Nie jest częścią MVP i nie należy go dodawać bez decyzji zespołu.
+UC-01 nie jest prognozą szeregu czasowego: dotyczy jednego samochodu i jednej migawki. Dlatego `forecast.csv` nie jest serią `data → wartość` ani historią wycen. Jeśli prowadzący wymaga tego pliku, używamy kolumn `data`, `wartosc`, `jednostka`; jeśli nie — wystarczą `comparison.csv` i `observations.csv`.
