@@ -163,45 +163,69 @@ flowchart LR
     UI -->|"wycena i ocena oferty"| User
 ```
 
-## Diagram sekwencji UC-01
+## Przepływ i sekwencja
+
+### Diagram sekwencji UC-01
+
+Źródło: [`docs/diagrams/sequence.mmd`](diagrams/sequence.mmd).
 
 ```mermaid
 sequenceDiagram
-    actor U as Kupujący / sprzedający
-    participant UI as React
+    autonumber
+    actor U as Użytkownik
+    participant UI as Formularz React
     participant API as FastAPI POST /predict
-    participant V as Walidator VehicleInput
-    participant P as PredictionService
-    participant M as ModelBundle + IntervalCalibrator
+    participant V as Walidator PredictRequest
+    participant R as PredictionRuntime
+    participant M as Pipeline Ridge + IntervalCalibrator
     participant C as OfferComparator
+    participant FS as Magazyn plików (poza MVP)
 
     U->>UI: parametry auta + asking_price_pln
     UI->>API: POST /predict (JSON)
     API->>V: waliduj pola, typy i zakresy
-    alt niepoprawne żądanie
-        V-->>API: InvalidVehicleInput
+    alt JSON niepoprawny
+        API-->>UI: HTTP 400 invalid_json
+        UI-->>U: komunikat o błędzie składni
+    else dane niepoprawne
+        V-->>API: invalid_vehicle_input
         API-->>UI: HTTP 422, błąd bez prognozy
         UI-->>U: komunikat o niepoprawnym polu
-    else żądanie poprawne
-        V-->>P: VehicleInput (new_used=Używane)
-        P->>M: oblicz prognozę i przedział
-        alt brak lub niezgodny model/kalibrator
-            M-->>P: ModelNotReady
-            P-->>API: błąd gotowości modelu
-            API-->>UI: HTTP 503, bez prognozy
+    else dane poprawne
+        V-->>R: cechy auta, new_used=Używane
+        R->>R: sprawdź manifest i artefakt modelu
+        alt model lub kalibrator niedostępny
+            R-->>API: ModelNotReady
+            API-->>UI: HTTP 503 model_not_ready
             UI-->>U: informacja o niedostępnej wycenie
-        else wynik poprawny i skończony
-            M-->>P: estimated_price_pln, lower_pln, upper_pln
-            P->>C: porównaj asking_price_pln z przedziałem
-            C-->>P: below_estimate / around_estimate / above_estimate
-            P-->>API: PriceEstimate + wersje modelu i danych
-            API-->>UI: HTTP 200, JSON z prognozą i oceną
-            UI-->>U: cena, przedział i ocena ceny oferty
+        else model gotowy
+            R->>M: predict(feature_frame)
+            M-->>R: prognoza log1p(price_pln) + przedział
+            R->>R: expm1 oraz kontrola finite i lower <= estimate <= upper
+            alt wynik niepoprawny
+                R-->>API: PredictionFailure
+                API-->>UI: HTTP 500 prediction_failed
+                UI-->>U: brak wyceny
+            else wynik poprawny
+                R-->>API: prognoza, przedział, wersje modelu i danych
+                API->>C: porównaj asking_price_pln z przedziałem
+                C-->>API: below_estimate / around_estimate / above_estimate
+                API-->>UI: HTTP 200 JSON
+                UI-->>U: cena, przedział i ocena oferty
+            end
+        end
+    end
+    Note over API: MVP nie zapisuje wyniku (ADR-001). HTTP 200 nie jest potwierdzeniem zapisu.
+    opt Poza MVP: trwały zapis wyników
+        API->>FS: zapisz wynik
+        alt błąd zapisu
+            FS-->>API: błąd zapisu
+            API-->>UI: błąd zapisu, brak potwierdzenia
         end
     end
 ```
 
-W ścieżce UC-01 nie ma zapisu prognozy. Awaria zapisu nie może więc skutkować fałszywym potwierdzeniem zapisu; odpowiedź HTTP oznacza jedynie, że wynik został obliczony i zwrócony. Gdyby później dodano historię, zapis musi być osobnym kontraktem z jednoznaczną obsługą błędu.
+Komunikaty wymagające kontraktu interfejsu: `POST /predict` i pola żądania, ustawienie `new_used="Używane"` po stronie API, pola odpowiedzi `estimated_price_pln`, `prediction_interval_pln`, `asking_price_pln`, `comparison`, `currency`, `method`, `model_version`, `data_version` oraz kody `400`, `422`, `503`, `500`. Zapis jest poza MVP (ADR-001); blok `opt` pokazuje wyłącznie wymaganą reakcję, gdyby historia wycen została dodana.
 
 ## Spójność z Lab 3–4 — przegląd A5
 
