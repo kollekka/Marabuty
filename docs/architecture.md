@@ -179,8 +179,9 @@ sequenceDiagram
     participant R as PredictionRuntime
     participant M as Pipeline Ridge + IntervalCalibrator
     participant C as OfferComparator
-    participant FS as Magazyn plików (poza MVP)
+    participant FS as Magazyn plików (wariant poza MVP)
 
+    Note over FS: Wariant hipotetyczny, nie istnieje w MVP.
     U->>UI: parametry auta + asking_price_pln
     UI->>API: POST /predict (JSON)
     API->>V: waliduj pola, typy i zakresy
@@ -192,7 +193,9 @@ sequenceDiagram
         API-->>UI: HTTP 422, błąd bez prognozy
         UI-->>U: komunikat o niepoprawnym polu
     else dane poprawne
-        V-->>R: cechy auta, new_used=Używane
+        V-->>API: poprawne cechy
+        API->>API: ustaw new_used=Używane, oddziel asking_price_pln
+        API->>R: predict(vehicle_features)
         R->>R: sprawdź manifest i artefakt modelu
         alt model lub kalibrator niedostępny
             R-->>API: ModelNotReady
@@ -269,7 +272,8 @@ flowchart LR
     User -->|"parametry auta i asking_price_pln"| UI
     UI -->|"JSON: make, model, year, mileage_km, ..., asking_price_pln"| API
     API -->|"JSON"| Validator
-    Validator -->|"cechy + new_used=Używane"| Runtime
+    Validator -->|"poprawne cechy"| API
+    API -->|"cechy + new_used=Używane"| Runtime
     Bundle -->|"joblib + manifest"| Runtime
     Runtime -->|"DataFrame cech"| Pipeline
     Pipeline -->|"prognoza punktowa w PLN"| Calibrator

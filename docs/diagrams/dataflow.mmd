@@ -35,7 +35,8 @@ flowchart LR
     User -->|"parametry auta i asking_price_pln"| UI
     UI -->|"JSON: make, model, year, mileage_km, ..., asking_price_pln"| API
     API -->|"JSON"| Validator
-    Validator -->|"cechy + new_used=Używane"| Runtime
+    Validator -->|"poprawne cechy"| API
+    API -->|"cechy + new_used=Używane"| Runtime
     Bundle -->|"joblib + manifest"| Runtime
     Runtime -->|"DataFrame cech"| Pipeline
     Pipeline -->|"prognoza punktowa w PLN"| Calibrator
