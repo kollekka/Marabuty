@@ -25,7 +25,7 @@ Głównym źródłem są publiczne ogłoszenia z Otomoto.pl pozyskane własnym e
 
 ## Środowisko i uruchomienie
 
-Wymagany jest Python 3.9 lub nowszy (projekt testowano na 3.9.13). Zależności są zapisane w `requirements.txt` (`pandas>=2.0`, `scikit-learn>=1.3`).
+Wymagany jest Python 3.9 lub nowszy (projekt testowano na 3.9.13). Zależności aplikacji i przetwarzania są zapisane w `requirements.txt`; zależności testowe w `requirements-dev.txt`.
 
 ```bash
 python -m pip install -r requirements.txt
@@ -85,3 +85,21 @@ Zmienia się wyłącznie `--test-size`. Ziarno 42 i `alpha=1.0` pozostają bez z
 | `results/lab4/sensitivity/observations.csv` | 8 wierszy testowych dla podziału 70/30 |
 
 Skrypt sprawdza wejście (wymagane kolumny, brak braków, ceny dodatnie), blokuje nadpisanie pliku wejściowego i wypisuje wzory metryk wraz z ręcznym przykładem na trzech liczbach.
+
+## API wyceny (Lab 5)
+
+API znajduje się w `app/main.py` i udostępnia `POST /predict`. Uruchomienie lokalne:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m uvicorn app.main:app --reload
+```
+
+Żądanie zawiera parametry samochodu używanego oraz `asking_price_pln`. API zwraca prognozę, przedział niepewności i ocenę ceny oferty. Model musi być dostępny w `models/price-ridge.joblib`, a jego manifest w `models/manifest.json`. Do czasu dostarczenia zgodnego artefaktu poprawne żądanie zwraca `503 model_not_ready`.
+
+Testy API:
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m pytest
+```

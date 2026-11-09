@@ -2,7 +2,7 @@
 
 ## Zakres i granice systemu
 
-Projekt docelowo jest aplikacją webową: użytkownik korzysta z formularza React, a backend FastAPI udostępnia prognozę przez `POST /predict`. W repozytorium są obecnie skrypty analityczne Lab 3–4; frontend, API i model zapisany do ponownego użycia są planowane, a nie zaimplementowane.
+Projekt docelowo jest aplikacją webową: użytkownik korzysta z formularza React, a backend FastAPI udostępnia prognozę przez `POST /predict`. API i walidacja żądania są już zaimplementowane. Formularz React, wytrenowany model i kalibrator przedziału nadal są planowane; bez zgodnego artefaktu poprawne żądanie otrzymuje `503 model_not_ready`.
 
 Otomoto/OLX jest źródłem migawki danych wykorzystywanej offline. Aplikacja nie odpytuje portalu podczas wyceny. Własny system obejmuje interfejs webowy, walidację żądania, usługę predykcji, artefakt modelu oraz odpowiedź API. Baza danych i historia pojedynczych wycen nie należą do zakresu MVP.
 
@@ -12,7 +12,8 @@ Otomoto/OLX jest źródłem migawki danych wykorzystywanej offline. Aplikacja ni
 | `scripts/quality_checks.py` | istnieje — Lab 3 | Sprawdza plik przetworzony: wymagane kolumny, typy, zakresy, format daty, klucze i flagi. Nie sprawdza ciągłości ani kolejności chronologicznej. |
 | `scripts/compare_methods.py` i `results/lab4/` | istnieją — Lab 4 | Porównują baseline z Ridge na podziale train/test i zapisują metryki oraz obserwacje testowe. Skrypt nie zapisuje modelu do późniejszej predykcji. |
 | Trening pełnego modelu i manifest | planowane | Trenuje model na pełnym przetworzonym zbiorze wyłącznie dla `new_used = Używane`; zapisuje artefakt i jego metadane. |
-| API FastAPI i walidacja żądania | planowane | Przyjmuje parametry auta i cenę ofertową, mapuje wynik predykcji lub błąd na odpowiedź HTTP. |
+| `app/main.py`, `app/schemas.py` | istnieją — szkielet Lab 5 | `POST /predict`, walidacja pól, porównanie ceny z przedziałem oraz odpowiedzi 400/422/500/503. Sukces wymaga zgodnego artefaktu modelu. |
+| `app/runtime.py` | istnieje — kontrakt integracyjny | Wczytuje i sprawdza artefakt joblib/manifest oraz wykonuje predykcję punktową i żąda przedziału od kalibratora. Zgodny artefakt i kalibrator nie są jeszcze dostępne. |
 | Formularz React | planowany | Zbiera dane auta i cenę oferty, pokazuje prognozę, przedział oraz ocenę ceny. |
 
 Pełny eksport `data/full-2026-11-01.csv` ma 233 040 rekordów. `data/processed/sample-clean.csv` ma 25 rekordów i służy do testów technicznych. W README opisano wynik przetworzenia pełnego eksportu (228 318 rekordów), ale pełny plik przetworzony nie znajduje się obecnie w repozytorium. Model z próbki 25 rekordów nie jest artefaktem produkcyjnym.
@@ -44,12 +45,12 @@ Metoda kalibracji i nominalny poziom pokrycia przedziału nie są jeszcze zaimpl
 | Moduł | Status | Odpowiedzialność i błędy |
 |---|---|---|
 | Formularz React | planowany | Zbiera parametry auta i cenę oferty; pokazuje odpowiedź lub komunikat walidacji/API. Nie oblicza prognozy. |
-| FastAPI `POST /predict` | planowany | Weryfikuje JSON/Pydantic, wywołuje usługę, mapuje wyjątki na HTTP. Nie zwraca ceny zastępczej przy błędzie. |
-| Walidator `VehicleInput` | planowany | Sprawdza wymagane pola, typy, zakresy i dozwolony stan `Używane`; opcjonalne cechy mogą być puste i są przekazywane do preprocessora modelu. |
-| `ModelBundleLoader` | planowany | Wczytuje pipeline i manifest; sprawdza wersję schematu, cechy, metodę oraz obecność kalibratora. Brak lub niezgodność artefaktu oznacza `model_not_ready`. |
-| `PredictionService` | planowany | Przekazuje dokładne cechy modelu do pipeline'u, oblicza prognozę i sprawdza, czy wynik jest skończony i dodatni. Nie sprawdza kolejności dat. |
-| `IntervalCalibrator` | planowany | Wyznacza `lower_pln` i `upper_pln` dla prognozy. Metoda i poziom pokrycia wymagają osobnej implementacji i walidacji na pełnym zbiorze. |
-| `OfferComparator` | planowany | Porównuje `asking_price_pln` z granicami przedziału i zwraca jedną z trzech etykiet R3. |
+| FastAPI `POST /predict` | istnieje — model integration pending | Weryfikuje JSON/Pydantic, wywołuje runtime, mapuje błędy na HTTP i nie zwraca ceny zastępczej. |
+| Walidator `PredictRequest` | istnieje | Sprawdza wymagane pola, typy, zakresy, dodatkowe pola i cenę ofertową. `new_used` jest ustawiane serwerowo na `Używane`. |
+| `PredictionRuntime.from_files` | istnieje — kontrakt artefaktu | Wczytuje pipeline i manifest; sprawdza wersję schematu, cechy, metodę oraz kalibrator. Brak lub niezgodność oznacza `model_not_ready`. |
+| `PredictionRuntime.predict` | istnieje — oczekuje artefaktu | Wykonuje pipeline `log1p`/`expm1`, pobiera granice od kalibratora i sprawdza skończoność oraz kolejność granic. Nie sprawdza kolejności dat. |
+| `IntervalCalibrator` | kontrakt określony, implementacja brak | Artefakt musi udostępniać `predict_interval(point_prediction_pln, feature_frame)`. Metoda i poziom pokrycia wymagają implementacji i walidacji na pełnym zbiorze. |
+| Porównanie ceny z przedziałem | istnieje w endpointcie | Mapuje cenę ofertową na `below_estimate`, `around_estimate` lub `above_estimate`. |
 | `prepare_data.py`, `quality_checks.py` | istnieją — offline | Przygotowują i kontrolują zbiory treningowe. Obecna kontrola `created_at` sprawdza format ISO 8601, nie ciągłość ani sortowanie chronologiczne. |
 | `compare_methods.py` | istnieje — offline | Ewaluacja baseline/Ridge z losowym podziałem train/test; nie jest endpointem ani modułem prognozującym dla użytkownika. |
 
@@ -106,6 +107,8 @@ Przykładowe błędy: `400 invalid_json` dla niepoprawnej składni JSON; `422 in
 | `ModelBundle` | Wytrenowany preprocessing + Ridge oraz kalibrator przedziału. | Planowany `models/price-ridge.joblib`. |
 | `ModelManifest` | `model_version`, `data_version`, data treningu, zakres tylko `Używane`, target `price_pln`, lista cech i typy, transformacja `log1p`/`expm1`, metoda/parametry Ridge, metoda i poziom pokrycia przedziału. | Planowany `models/manifest.json`. |
 | Wyniki ewaluacji | Metryki baseline/Ridge i obserwacje testowe Lab 4. | Istniejące CSV w `results/lab4/`; nie są wynikami użytkownika ani artefaktem modelu. |
+
+Kontrakt artefaktu dla API: plik joblib zawiera mapę z obiektami `pipeline` i `interval_calibrator`. `pipeline.predict(feature_frame)` zwraca prognozę w skali `log1p(price_pln)`; API przekształca ją przez `expm1`. Kalibrator udostępnia `predict_interval(point_prediction_pln, feature_frame) -> (lower_pln, upper_pln)`. Manifest zawiera `model_version`, `data_version`, `method`, `target_transform="log1p"`, `features` w kolejności z tabeli, `scope="Używane"`, `interval_method` i `interval_coverage`. Brak któregokolwiek elementu oznacza `503 model_not_ready`.
 
 Pola cech w modelu muszą zachować nazwy ze słownika: `make`, `model`, `year`, `mileage_km`, `engine_cc`, `engine_power_km`, `fuel_type`, `gearbox`, `transmission`, `body_type`, `new_used`, `region`. `price_pln` jest celem uczenia; dla żądania R3 oddzielna nazwa `asking_price_pln` zapobiega pomyleniu ceny oferty z celem modelu. W obecnym skrypcie Ridge `city` nie jest predyktorem.
 
@@ -208,5 +211,5 @@ W ścieżce UC-01 nie ma zapisu prognozy. Awaria zapisu nie może więc skutkowa
 - Lab 4 zwraca prognozę punktową; nie zawiera kalibracji przedziału. R2/R3 pozostają niegotowe do implementacji produkcyjnej, dopóki metoda i pokrycie przedziału nie zostaną wybrane oraz ocenione na pełnych danych.
 - Wymaganie R4 mówi o co najmniej trzech porównanych metodach i rankingu cech; obecne wyniki Lab 4 obejmują baseline i Ridge, bez rankingu ważności. Rozszerzenie jest zadaniem do implementacji, nie istniejącym elementem.
 - Obecne `quality_checks.py` sprawdza format `created_at`, nie ciągłość ani kolejność. Dla pojedynczego wejścia samochodu nie jest to potrzebne; ewentualna kontrola chronologii należy do walidacji danych treningowych.
-- R5 nie jest jeszcze spełnione przez API: FastAPI nie ma w repozytorium, a `quality_checks.py` waliduje plik CSV, nie żądanie użytkownika ani kod HTTP 422.
+- R5 jest częściowo zaimplementowane: API zwraca 400/422 dla niepoprawnych żądań, ale bez zgodnego artefaktu poprawne żądanie kończy się 503, a nie prognozą. `quality_checks.py` nadal waliduje plik CSV, nie żądanie użytkownika.
 - Obsługa brakujących lub niepoprawnych danych użytkownika należy do walidatora API. Istniejące kontrole jakości dotyczą plików CSV i nie zastępują walidacji żądania.
