@@ -52,6 +52,75 @@ Metryki na zbiorze testowym:
 
 Nie stroimy modelu ani baseline na teście. Jeśli w przyszłości pojawi się strojenie hiperparametrów, odbywa się ono wyłącznie w walidacji krzyżowej na train.
 
+## Weryfikacja ręczna
+
+Wartości oczekiwane policzono niezależnie od kodu i wyników Osoby B. Obliczenia wykonano w osobnym `git worktree` na commicie `bfbb9b6`, który zawiera kontrakt i `data/processed/sample-clean.csv`, ale nie zawiera jeszcze `results/lab4/`. Katalog roboczy nie miał dostępu do plików wynikowych. Użyto Pythona 3.9.13, pandas 2.3.3 i scikit-learn 1.6.1.
+
+Podział jest zgodny z kontraktem: `train_test_split(test_size=0.2, random_state=42)` daje 20 wierszy train i 5 wierszy test o indeksach 8, 16, 0, 23 i 11.
+
+### Baseline
+
+Dla przypadku `row_index=8` (Peugeot 2008, 2013, 140 315 km, cena 24 900 PLN) stosujemy wzór:
+
+```text
+ŷ = mediana_train(price_pln | make, model)
+jeśli brak pary: ŷ = mediana_train(price_pln | make)
+jeśli brak marki: ŷ = mediana_train(price_pln)
+```
+
+Kroki:
+
+1. Pary `Peugeot`+`2008` nie ma w train.
+2. Marki `Peugeot` nie ma w train.
+3. Globalna mediana `price_pln` w train wynosi 51 849,50 PLN.
+4. Prognoza baseline: 51 849,50 PLN.
+5. Błąd bezwzględny: |24 900,00 − 51 849,50| = 26 949,50 PLN.
+6. APE: 26 949,50 / 24 900,00 × 100% = 108,23%.
+
+### Ridge
+
+Model jest uczony na `log1p(price_pln)`, a prognozę wracamy wzorem:
+
+```text
+z = w0 + Σ wj·xj
+ŷ = expm1(z)
+```
+
+Po imputacji, one-hot encoding i grupowaniu rzadkich poziomów przypadek ma 39 cech. Wyraz wolny wynosi −265,5810068059, a suma iloczynów cech i współczynników daje `z = 9,2995532916`. Po odwróceniu logarytmu:
+
+```text
+ŷ = expm1(9,2995532916) = 10 932,13 PLN
+```
+
+Błąd bezwzględny: |24 900,00 − 10 932,13| = 13 967,87 PLN. APE: 13 967,87 / 24 900,00 × 100% = 56,10%.
+
+Największy wkład w `z` ma `num__year` (+274,821320), a następnie `num__engine_power_km` (+0,448968). Pozostałe cechy mają mniejsze wkłady.
+
+### Miara zbiorcza
+
+MAE liczymy ze wzoru:
+
+```text
+MAE = (1/n) · Σ |yi − ŷi|
+```
+
+Dla 5 przypadków testowych suma błędów bezwzględnych baseline wynosi 928 499,50 PLN, więc MAE = 928 499,50 / 5 = 185 699,90 PLN. Dla Ridge suma błędów wynosi 197 653,12 PLN, więc MAE = 197 653,12 / 5 = 39 530,62 PLN.
+
+### Wartości oczekiwane
+
+| Element | Wartość oczekiwana |
+|---|---:|
+| Baseline — prognoza dla `row_index=8` | 51 849,50 PLN |
+| Baseline — błąd bezwzględny | 26 949,50 PLN |
+| Baseline — APE | 108,23% |
+| Ridge — prognoza dla `row_index=8` | 10 932,13 PLN |
+| Ridge — błąd bezwzględny | 13 967,87 PLN |
+| Ridge — APE | 56,10% |
+| Baseline — MAE na 5 testach | 185 699,90 PLN |
+| Ridge — MAE na 5 testach | 39 530,62 PLN |
+
+Wartości są zaokrąglone do 2 miejsc po przecinku. Służą jako punkt odniesienia w sekcji „Porównanie i interpretacja”; nie kopiowano ich z `results/lab4/`.
+
 ## Źródła literaturowe i uzasadnienie metody
 
 Wybór regresji log-liniowej wynika z charakteru zmiennej: cena jest ciągła, dodatnia i silnie skośna, a logarytm stabilizuje wariancję i ogranicza wpływ skrajnych cen. Regresja liniowa daje też interpretowalne współczynniki i jest naturalnym punktem wyjścia przed modelami drzewiastymi. Baseline mediany dla marki i modelu jest mocnym, prostym odniesieniem, bo w danych o samochodach marka i model silnie różnicują cenę.
@@ -78,9 +147,63 @@ Raport powinien zawierać tabelę z metrykami baseline i modelu dla obu podział
 
 Kryterium praktyczne to spełnienie R6: MAE i RMSE niższe oraz R² wyższe niż baseline, a MAPE ≤ 15%. Sama minimalna poprawa jednej metryki nie wystarcza do decyzji wdrożeniowej. Przy tak małej próbce raportujemy również bezwzględne wartości błędów, żeby nie ukrywać niepewności za samym rankingiem.
 
+## Porównanie i interpretacja
+
+Kontrola `scripts/check_results.py` przeszła 10 z 10 kontroli dla `results/lab4/` i 10 z 10 dla `results/lab4/sensitivity/`; kod wyjścia wyniósł 0. Pełny log znajduje się w `data/test/lab4-check-results.log`. Sekcja A4 potwierdziła wcześniej odtwarzalność plików, więc poniżej nie powtarzamy testu bajtowego.
+
+### Zgodność wartości oczekiwanych z wynikami
+
+| Element | C1 — wartość oczekiwana | B — wynik | Różnica |
+|---|---:|---:|---:|
+| Baseline — prognoza `row_index=8` | 51 849,50 PLN | 51 849,50 PLN | 0,00 PLN |
+| Ridge — prognoza `row_index=8` | 10 932,13 PLN | 10 932,13 PLN | 0,00 PLN |
+| Baseline — błąd `row_index=8` | 26 949,50 PLN | 26 949,50 PLN | 0,00 PLN |
+| Ridge — błąd `row_index=8` | 13 967,87 PLN | 13 967,87 PLN | 0,00 PLN |
+| Baseline — APE `row_index=8` | 108,23% | 108,23% | 0,00 p.p. |
+| Ridge — APE `row_index=8` | 56,10% | 56,10% | 0,00 p.p. |
+| Baseline — MAE | 185 699,90 PLN | 185 699,90 PLN | 0,00 PLN |
+| Ridge — MAE | 39 530,62 PLN | 39 530,62 PLN | 0,00 PLN |
+
+Różnice mieszczą się w tolerancji przyjętej dla zaokrągleń. Oznacza to, że niezależne obliczenie C1 i wynik skryptu B opisują tę samą procedurę.
+
+### Wyniki i kryterium R6
+
+| Podział | Metoda | MAE [PLN] | RMSE [PLN] | R² | MAPE [%] | Różnica MAE vs baseline |
+|---|---|---:|---:|---:|---:|---:|
+| 80/20 | baseline | 185 699,90 | 350 138,20 | −0,2127 | 149,84 | — |
+| 80/20 | ridge | 39 530,62 | 65 989,83 | 0,9569 | 33,35 | −146 169,28 (−78,71%) |
+| 70/30 | baseline | 135 692,44 | 280 966,13 | −0,1587 | 137,49 | — |
+| 70/30 | ridge | 20 386,01 | 30 384,92 | 0,9864 | 25,84 | −115 306,43 (−84,98%) |
+
+### Odpowiedzi na pytania interpretacyjne
+
+1. **Który wariant jest lepszy i o ile?** Ridge jest lepszy w obu podziałach. Przy 80/20 obniża MAE o 146 169,28 PLN, czyli o 78,71%, a przy 70/30 o 115 306,43 PLN, czyli o 84,98%. Ma też niższe RMSE i wyższe R² niż baseline.
+2. **Czy spełnia kryterium R6?** Tylko częściowo. MAE, RMSE i R² są lepsze od baseline w obu podziałach, ale MAPE wynosi 33,35% dla 80/20 i 25,84% dla 70/30, więc przekracza próg ok. 15%. R6 nie jest spełnione w zakresie MAPE.
+3. **Czy zmiana parametru zmienia wniosek?** Nie zmienia rankingu. Po przejściu z 80/20 na 70/30 Ridge nadal wygrywa, a MAPE nadal przekracza 15%. Wniosek kierunkowo się utrzymuje, choć zmienia się skala poprawy MAE.
+4. **Czego nie wolno wywnioskować?** Nie można twierdzić o przyczynowym wpływie cech na cenę, o wynikach dla całego rynku ani o cenach transakcyjnych. Przy 25 rekordach i 5–8 obserwacjach testowych nie ma podstaw do uogólniania na pełny zbiór 228 318 rekordów ani do twierdzenia, że próg MAPE zostanie osiągnięty poza tą próbką. Wynik baseline zależy od fallbacku median dla par i marek.
+
+## Ograniczenia
+
+- Próba liczy 25 rekordów, a zbiór testowy 5 lub 8 obserwacji. Pojedynczy błąd mocno zmienia metryki, więc wynik jest orientacyjny.
+- Dane pochodzą z jednej migawki z 2026-11-01. Nie pozwalają ocenić sezonowości ani zmian cen w czasie.
+- Ceny są ofertowe, a nie transakcyjne. Model uczy się oczekiwań sprzedających, nie rzeczywistych cen sprzedaży.
+- Brak niezależnego zbioru końcowego. Test posłużył do oceny, ale nie do strojenia; nie ma jednak zewnętrznej walidacji na innym okresie lub rynku.
+- Baseline z fallbackiem `make+model → make → globalna mediana` jest czuły na pary i marki niewystępujące w train. Wiele par pojawia się tylko raz.
+- Brakuje przetworzonego pełnego zbioru 228 318 rekordów, cen transakcyjnych i historii cen. Nie można uogólniać wyniku na cały rynek ani twierdzić, że próg MAPE 15% zostanie osiągnięty poza próbką.
+- Dane są rzeczywiste, nie syntetyczne. Ograniczeniem jest mała, techniczna i niereprezentatywna próbka, a nie sposób ich wygenerowania.
+
+## Użycie AI
+
+| Narzędzie | Do czego użyto | Co zweryfikowano |
+|---|---|---|
+| Asystent AI (opencode) | Redakcja i uporządkowanie sekcji C1–C4, propozycja listy kontroli w `check_results.py`, pomoc w zapisie wzorów i języka dokumentacji. | Wszystkie liczby pochodzą z niezależnego obliczenia C1 i plików `results/lab4/`; skrypt kontroli uruchomiono na obu katalogach i na kopii z błędem. Źródeł literaturowych nie generowano ponownie — pozostały w sekcji. |
+| Asystent AI (opencode) | Sprawdzenie spójności nagłówków, tabel i poleceń uruchomienia. | Porównano nagłówki z szablonem, uruchomiono `check_results.py`, sprawdzono kod wyjścia i brak zmian w plikach. |
+
+AI nie było źródłem danych ani wyników. Nie tworzono nowych publikacji ani nie zmieniano parametrów po obejrzeniu wyników.
+
 ## Odtworzenie
 
-A4 wykonano 2026-11-02 na commitcie `docs: README Lab 4` (ostatni commit Osoby B). Użyto `.venv` z Pythonem 3.13.5, pandas 3.1.0 i scikit-learn 1.9.1. Uruchomiono dokładnie polecenia z README Osoby B:
+A4 wykonano 2026-11-02 na commitcie `docs: README Lab 4`. Użyto `.venv` z Pythonem 3.13.5, pandas 3.1.0 i scikit-learn 1.9.1. Uruchomiono dokładnie polecenia z README Osoby B:
 
 ```powershell
 python scripts/compare_methods.py data/processed/sample-clean.csv --output-dir results/lab4 --test-size 0.2 --seed 42
@@ -96,7 +219,7 @@ Wyniki na teście:
 | 70/30 | baseline | 17 | 8 | 135 692,44 | 280 966,13 | −0,1587 | 137,49 |
 | 70/30 | ridge | 17 | 8 | 20 386,01 | 30 384,92 | 0,9864 | 25,84 |
 
-Odtworzenie jest zgodne z wynikami Osoby B: wszystkie cztery pliki (`results/lab4/comparison.csv`, `results/lab4/observations.csv`, `results/lab4/sensitivity/comparison.csv`, `results/lab4/sensitivity/observations.csv`) są identyczne co do bajtu (zgodne sumy SHA256). Różnica metryk wynosi 0, więc przyjęta tolerancja została spełniona.
+Odtworzenie jest zgodne z wynikami: wszystkie cztery pliki (`results/lab4/comparison.csv`, `results/lab4/observations.csv`, `results/lab4/sensitivity/comparison.csv`, `results/lab4/sensitivity/observations.csv`) są identyczne co do bajtu (zgodne sumy SHA256). Różnica metryk wynosi 0, więc przyjęta tolerancja została spełniona.
 
 ### Wnioski
 
