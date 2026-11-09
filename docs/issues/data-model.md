@@ -19,6 +19,17 @@ Indeks zgłoszeń GitHub dla części C. Zasada: **mało i konkretnie** — każ
 | [#10](https://github.com/kollekka/Marabuty/issues/10) | [#8](https://github.com/kollekka/Marabuty/issues/8) | Ten sam zakres: wersjonowanie uruchomień i ochrona wyników przed nadpisaniem. #8 jest szersze i już zawiera metadane świeżości. |
 | [#12](https://github.com/kollekka/Marabuty/issues/12) | [#9](https://github.com/kollekka/Marabuty/issues/9) | Ten sam zakres: przegląd UC-01 i ujednolicenie nazw. Ustalenia C5 są w [`docs/reviews/uc-01.md`](../reviews/uc-01.md) i w komentarzu do #9. |
 
+## Czego nie duplikujemy
+
+| Temat | Gdzie jest już ujęty | Decyzja |
+|---|---|---|
+| `gearbox` / `Półautomatyczna` | #9 F4 i #11 | Nie tworzymy nowego issue; decyzja o usunięciu/zostawieniu należy do właścicieli tych zadań. |
+| C5 — przegląd UC-01 | #9 (komentarz C5) | Nie tworzymy nowego issue; #12 zamknięte jako duplikat. |
+| Nazwy `PredictRequest` / `PredictResponse` | #9 F1/F2 oraz poprawki w modelu C | Nie tworzymy nowego issue; model C używa nazw z implementacji. |
+| `run.json` i metadane wyników | #8 (kontrakt) i #11 (walidacja) | Nie tworzymy nowego issue; jeśli trzeba dopisać `method`, to uzupełnienie #8, nie nowe zgłoszenie. |
+| opcjonalny `forecast.csv` | brak osobnego issue | To opcjonalny eksport C2, nie historia wycen; nie tworzymy dla niego nowego zadania. |
+| pełny schemat 81 kolumn | #7 (dane treningowe) i #11 (walidacja `sample-clean.csv`) | Nie duplikujemy; pełny słownik pól jest w `docs/data-dictionary.md`. |
+
 ## Kolejność realizacji
 
 1. **#6** — pełny plik przetworzony i `data_version` (wejście dla treningu).
@@ -33,7 +44,7 @@ Indeks zgłoszeń GitHub dla części C. Zasada: **mało i konkretnie** — każ
 | Wymaganie | Rezultat |
 |---|---|
 | C1 — model logiczny | [`docs/data-model.md`](../data-model.md) — obiekty, znaczenie rekordu, relacje, ERD logiczny |
-| C2 — model fizyczny | [`docs/data-model-physical.md`](../data-model-physical.md) — ścieżki, formaty, schematy pól, zasada braku nadpisań |
+| C2 — model fizyczny | [`docs/data-model-physical.md`](../data-model-physical.md) — `run.json` (wersja danych, `method`/`methods`, parametry), `comparison.csv`, `observations.csv`, opcjonalny `forecast.csv` i zasada braku nadpisań |
 | C3 — ADR | [`docs/decisions/001-storage.md`](../decisions/001-storage.md) — decyzja, alternatywy, koszty, zespół, warunek ponownego rozważenia |
 | C4 — zadania | ten dokument + zgłoszenia #6–#9 i #11 |
 | C5 — przegląd | [`docs/reviews/uc-01.md`](../reviews/uc-01.md) + [#9](https://github.com/kollekka/Marabuty/issues/9) |
