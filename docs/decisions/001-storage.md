@@ -14,12 +14,12 @@ Zespół liczy trzy osoby i pracuje w Pythonie z pandas i scikit-learn. Nie ma d
 
 - Wytrenowany pipeline modelu i jego metadane przechowujemy jako pliki: `models/price-ridge.joblib` oraz `models/manifest.json`.
 - Manifest identyfikuje model i dane treningowe oraz zawiera wymagane przez runtime pola: `model_version`, `data_version`, `method`, `target_transform="log1p"`, `features` w kolejności `MODEL_FEATURES`, `scope="Używane"`, `interval_method` i `interval_coverage` w `(0,1)`. Pola `schema_version`, `trained_at`, `training_rows`, `input_sha256`, `source_file`, `snapshot_date`, `row_count`, `column_count` i `code_commit` są opcjonalnymi metadanymi wersjonowania; obecny runtime ich nie wymaga.
-- Wyniki analiz zapisujemy w plikach CSV. Dla nowych uruchomień docelowy jest katalog `results/runs/<data_version>/<run_id>/` z `run.json`, `comparison.csv` i `observations.csv`. `run.json` zawiera wersję danych, parametry, SHA256 wejścia, commit kodu i datę uruchomienia.
+- Wyniki analiz zapisujemy w plikach CSV. Dla nowych uruchomień docelowy jest katalog `results/runs/<data_version>/<run_id>/` z `run.json`, `comparison.csv`, `observations.csv` i opcjonalnym `forecast.csv`. `run.json` zawiera wersję danych, metodę główną (`method`), listę porównywanych metod (`methods`), parametry, SHA256 wejścia, commit kodu i datę uruchomienia.
 - Migawka źródłowa i wersje modelu są niezmienne. Nowa migawka, nowy model lub nowy run dostają nowy identyfikator wersji; nie nadpisują poprzednich wyników. Zapis odbywa się przez plik tymczasowy i atomową podmianę.
 - FastAPI wczytuje i weryfikuje zestaw plików **leniwie, przy pierwszym żądaniu** (`get_prediction_runtime` w `app/main.py`); opcjonalny startup check może to zmienić w przyszłości. Brak artefaktu, kalibratora lub zgodności wymaganych pól manifestu oznacza brak gotowości usługi; API zwraca `503 model_not_ready` i nie udaje prognozy.
 - Pojedyncze żądania i odpowiedzi prognozy nie są trwale zapisywane w MVP. Wynik wraca do klienta jako JSON. CSV z `results/lab4/` pozostają artefaktami ewaluacji, a nie historią użytkowników.
 - Model musi być wytrenowany i oceniony na pełnym zbiorze aut `Używane`; próbka 25 rekordów jest wyłącznie techniczna.
-- W tym projekcie nie tworzymy `forecast.csv` z kolumnami `data`, `wartość`, `jednostka`, bo UC-01 nie jest prognozą szeregu czasowego. Odpowiednikiem wyniku są `comparison.csv` i `observations.csv`. Gdyby pojawił się wymóg eksportu predykcji, może powstać opcjonalny `predictions.csv`, ale nie jest to część MVP.
+- W tym projekcie nie tworzymy **historii** `forecast.csv` ani prognozy szeregu czasowego. Jeżeli prowadzący wymaga pliku `forecast.csv`, może powstać opcjonalny eksport pojedynczej wyceny z kolumnami `data`, `wartosc`, `jednostka`; nie jest to historia wycen ani część MVP. Podstawowymi wynikami pozostają `comparison.csv` i `observations.csv`.
 
 ## Alternatywa
 
