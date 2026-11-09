@@ -6,9 +6,10 @@ sequenceDiagram
     participant V as Walidator PredictRequest
     participant R as PredictionRuntime
     participant M as Pipeline Ridge + IntervalCalibrator
-    participant C as OfferComparator
+    participant C as Porównanie ceny (main.py)
     participant FS as Magazyn plików (wariant poza MVP)
 
+    Note over R: Runtime jest tworzony leniwie przy pierwszym żądaniu (get_prediction_runtime).
     Note over FS: Wariant hipotetyczny, nie istnieje w MVP.
     U->>UI: parametry auta + asking_price_pln
     UI->>API: POST /predict (JSON)
@@ -23,13 +24,14 @@ sequenceDiagram
     else dane poprawne
         V-->>API: poprawne cechy
         API->>API: ustaw new_used=Używane, oddziel asking_price_pln
-        API->>R: predict(vehicle_features)
-        R->>R: sprawdź manifest i artefakt modelu
+        API->>R: from_files(model_dir) — tylko pierwsze żądanie
+        R->>R: wczytaj joblib + manifest i sprawdź kontrakt
         alt model lub kalibrator niedostępny
             R-->>API: ModelNotReady
             API-->>UI: HTTP 503 model_not_ready
             UI-->>U: informacja o niedostępnej wycenie
         else model gotowy
+            API->>R: predict(vehicle_features)
             R->>M: predict(feature_frame)
             M-->>R: prognoza log1p(price_pln) + przedział
             R->>R: expm1 oraz kontrola finite i lower <= estimate <= upper

@@ -20,7 +20,7 @@ flowchart LR
         Runtime["PredictionRuntime<br/>ISTNIEJE — czeka na artefakt"]
         Pipeline["Pipeline Ridge<br/>PLANOWANY"]
         Calibrator["IntervalCalibrator<br/>PLANOWANY"]
-        Comparator["OfferComparator<br/>ISTNIEJE w endpointcie"]
+        Comparator["Porównanie ceny<br/>ISTNIEJE w endpointcie"]
         NoStore["Brak zapisu w MVP<br/>ADR-001"]
     end
 
@@ -40,7 +40,9 @@ flowchart LR
     Bundle -->|"joblib + manifest"| Runtime
     Runtime -->|"DataFrame cech"| Pipeline
     Pipeline -->|"prognoza punktowa w PLN"| Calibrator
-    Calibrator -->|"lower_pln, upper_pln"| Comparator
+    Calibrator -->|"lower_pln, upper_pln"| Runtime
+    Runtime -->|"prognoza, przedział, wersje"| API
+    API -->|"asking_price_pln + przedział"| Comparator
     Comparator -->|"below_estimate / around_estimate / above_estimate"| API
     API -->|"JSON: prognoza, przedział, etykieta, wersje"| UI
     UI -->|"cena, przedział i ocena oferty"| User

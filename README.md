@@ -17,6 +17,13 @@ Cena samochodu używanego zależy jednocześnie od wielu cech, a ogłoszenia pod
 - [Opis problemu](docs/problem.md)
 - [Ocena źródła danych](docs/data.md)
 - [Słownik danych](docs/data-dictionary.md)
+- [Architektura i UC-01](docs/architecture.md)
+- [Model logiczny danych](docs/data-model.md)
+- [Model fizyczny — schemat plików](docs/data-model-physical.md)
+- [ADR-001: zapis wyników i artefaktu modelu](docs/decisions/001-storage.md)
+- [Przegląd UC-01 (C5)](docs/reviews/uc-01.md)
+- [Zadania Lab 5](docs/issues/data-model.md)
+- [ERD — kod Mermaid](docs/diagrams/data-model-erd.mmd)
 - [Próbka danych (25 rekordów)](data/raw/sample.csv)
 
 ## Dane
@@ -103,3 +110,11 @@ Testy API:
 python -m pip install -r requirements-dev.txt
 python -m pytest
 ```
+
+## Lab 5: model danych i decyzja architektoniczna
+
+- [Model logiczny](docs/data-model.md) opisuje obiekty, znaczenie pojedynczego rekordu i relacje. ERD jest **logiczny**, nie jest schematem bazy.
+- [Model fizyczny](docs/data-model-physical.md) opisuje konkretny zapis plikowy: `data/`, `models/` i `results/runs/<data_version>/<run_id>/`; nie tworzymy fikcyjnej bazy.
+- [ADR-001](docs/decisions/001-storage.md) uzasadnia wybór plików zamiast SQLite/PostgreSQL, podaje koszty i warunek ponownego rozważenia.
+- [Przegląd UC-01](docs/reviews/uc-01.md) zawiera ustalenia F1–F10 i poprawki; zadania są w [indeksie Lab 5](docs/issues/data-model.md) oraz w GitHub Issues.
+- Kod ERD do wklejenia w Mermaid Live Editor: [`docs/diagrams/data-model-erd.mmd`](docs/diagrams/data-model-erd.mmd).

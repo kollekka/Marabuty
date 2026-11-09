@@ -6,6 +6,8 @@ Projekt docelowo jest aplikacją webową: użytkownik korzysta z formularza Reac
 
 Otomoto/OLX jest źródłem migawki danych wykorzystywanej offline. Aplikacja nie odpytuje portalu podczas wyceny. Własny system obejmuje interfejs webowy, walidację żądania, usługę predykcji, artefakt modelu oraz odpowiedź API. Baza danych i historia pojedynczych wycen nie należą do zakresu MVP.
 
+Model danych jest opisany osobno: [model logiczny](data-model.md), [model fizyczny — schemat plików](data-model-physical.md) i [kod ERD](diagrams/data-model-erd.mmd). ERD jest logiczny, nie jest schematem bazy.
+
 | Element | Status | Odpowiedzialność |
 |---|---|---|
 | `scripts/prepare_data.py` | istnieje — Lab 3 | Czyści CSV, filtruje niepoprawne rekordy, ujednolica typy i zapisuje plik przetworzony. |
@@ -47,7 +49,7 @@ Metoda kalibracji i nominalny poziom pokrycia przedziału nie są jeszcze zaimpl
 | Formularz React | planowany | Zbiera parametry auta i cenę oferty; pokazuje odpowiedź lub komunikat walidacji/API. Nie oblicza prognozy. |
 | FastAPI `POST /predict` | istnieje — model integration pending | Weryfikuje JSON/Pydantic, wywołuje runtime, mapuje błędy na HTTP i nie zwraca ceny zastępczej. |
 | Walidator `PredictRequest` | istnieje | Sprawdza wymagane pola, typy, zakresy, dodatkowe pola i cenę ofertową. `new_used` jest ustawiane serwerowo na `Używane`. |
-| `PredictionRuntime.from_files` | istnieje — kontrakt artefaktu | Wczytuje pipeline i manifest; sprawdza wersję schematu, cechy, metodę oraz kalibrator. Brak lub niezgodność oznacza `model_not_ready`. |
+| `PredictionRuntime.from_files` | istnieje — kontrakt artefaktu | Wczytuje pipeline i manifest; sprawdza wymagane pola manifestu, `scope="Używane"`, `target_transform="log1p"`, dokładną kolejność `features`, niepuste identyfikatory, `interval_coverage` w `(0,1)` oraz obecność pipeline'u i kalibratora. Nie wymaga `schema_version`, `trained_at` ani typów cech — to metadane opcjonalne. Brak lub niezgodność oznacza `model_not_ready`. |
 | `PredictionRuntime.predict` | istnieje — oczekuje artefaktu | Wykonuje pipeline `log1p`/`expm1`, pobiera granice od kalibratora i sprawdza skończoność oraz kolejność granic. Nie sprawdza kolejności dat. |
 | `IntervalCalibrator` | kontrakt określony, implementacja brak | Artefakt musi udostępniać `predict_interval(point_prediction_pln, feature_frame)`. Metoda i poziom pokrycia wymagają implementacji i walidacji na pełnym zbiorze. |
 | Porównanie ceny z przedziałem | istnieje w endpointcie | Mapuje cenę ofertową na `below_estimate`, `around_estimate` lub `above_estimate`. |
@@ -71,13 +73,15 @@ UC-01 dotyczy pojedynczego samochodu, nie szeregu czasowego, więc nie wymaga ci
 | `engine_cc` | integer lub null | Opcjonalne; cm³, gdy podano 500–8 000. |
 | `engine_power_km` | integer lub null | Opcjonalne; KM, gdy podano 20–2 000. |
 | `fuel_type` | string lub null | Opcjonalne; nazwa kategorii ze schematu danych. |
-| `gearbox` | string lub null | Opcjonalne; `Manualna`, `Automatyczna` lub `Półautomatyczna`. |
+| `gearbox` | string lub null | Opcjonalne; `Manualna` lub `Automatyczna` zgodnie ze słownikiem danych. API przyjmuje dodatkowo `Półautomatyczna` jako wartość forward-compatible; w migawce i słowniku jej nie ma, więc wymaga potwierdzenia (#11). |
 | `transmission` | string lub null | Opcjonalne; nazwa kategorii napędu ze schematu danych. |
 | `body_type` | string lub null | Opcjonalne; nazwa kategorii nadwozia. |
 | `region` | string lub null | Opcjonalne; województwo. |
 | `asking_price_pln` | number | Wymagane dla R3; cena ofertowa 1 000–5 000 000 PLN. |
 
 Usługa ustawia `new_used = "Używane"`; klient nie może wywołać tego przypadku dla `Nowość`. Brakujące opcjonalne cechy są przekazywane jako braki do imputera zapisanego w pipeline. Kategorie spoza słownika mogą być obsłużone przez `OneHotEncoder(handle_unknown="ignore")`, ale niepoprawny typ lub zakres powoduje błąd walidacji.
+
+Zakresy w tabeli dotyczą danych **po czyszczeniu** (`prepare_data.py`), a nie surowej migawki. W surowym eksporcie mogą wystąpić starsze roczniki i niższe ceny; walidator API odrzuca je zgodnie z kontraktem po filtrze. To samo ograniczenie dotyczy `quality_checks.py`.
 
 ### Sukces i błędy
 
@@ -102,15 +106,15 @@ Przykładowe błędy: `400 invalid_json` dla niepoprawnej składni JSON; `422 in
 
 | Obiekt | Pola / znaczenie | Zapis |
 |---|---|---|
-| `VehicleInput` | Cechy auta zgodne z tabelą żądania oraz `asking_price_pln`; `new_used` ustawione przez serwer na `Używane`. | JSON żądania HTTP; pojedyncza obserwacja wejściowa. |
-| `PriceEstimate` | `estimated_price_pln`, granice przedziału, `asking_price_pln`, etykieta R3, waluta, metoda i wersje artefaktów. | JSON odpowiedzi HTTP; nie jest zapisywany jako historia w MVP. |
+| `PredictRequest` | Cechy auta zgodne z tabelą żądania oraz `asking_price_pln`; `new_used` ustawione przez serwer na `Używane`. | JSON żądania HTTP; pojedyncza obserwacja wejściowa. |
+| `PredictResponse` | `estimated_price_pln`, granice przedziału, `asking_price_pln`, etykieta R3, waluta, metoda i wersje artefaktów. | JSON odpowiedzi HTTP; nie jest zapisywany jako historia w MVP. |
 | `ModelBundle` | Wytrenowany preprocessing + Ridge oraz kalibrator przedziału. | Planowany `models/price-ridge.joblib`. |
-| `ModelManifest` | `model_version`, `data_version`, data treningu, zakres tylko `Używane`, target `price_pln`, lista cech i typy, transformacja `log1p`/`expm1`, metoda/parametry Ridge, metoda i poziom pokrycia przedziału. | Planowany `models/manifest.json`. |
+| `ModelManifest` | `model_version`, `data_version`, `method`, `target_transform="log1p"`, uporządkowana lista `features`, `scope="Używane"`, `interval_method`, `interval_coverage`. Opcjonalne metadane: `trained_at`, `training_rows`, `input_sha256`, `source_file`, `snapshot_date`, `row_count`, `column_count`, `code_commit`. | Planowany `models/manifest.json`. |
 | Wyniki ewaluacji | Metryki baseline/Ridge i obserwacje testowe Lab 4. | Istniejące CSV w `results/lab4/`; nie są wynikami użytkownika ani artefaktem modelu. |
 
-Kontrakt artefaktu dla API: plik joblib zawiera mapę z obiektami `pipeline` i `interval_calibrator`. `pipeline.predict(feature_frame)` zwraca prognozę w skali `log1p(price_pln)`; API przekształca ją przez `expm1`. Kalibrator udostępnia `predict_interval(point_prediction_pln, feature_frame) -> (lower_pln, upper_pln)`. Manifest zawiera `model_version`, `data_version`, `method`, `target_transform="log1p"`, `features` w kolejności z tabeli, `scope="Używane"`, `interval_method` i `interval_coverage`. Brak któregokolwiek elementu oznacza `503 model_not_ready`.
+Kontrakt artefaktu dla API: plik joblib zawiera mapę z obiektami `pipeline` i `interval_calibrator`. `pipeline.predict(feature_frame)` zwraca prognozę w skali `log1p(price_pln)`; API przekształca ją przez `expm1`. Kalibrator udostępnia `predict_interval(point_prediction_pln, feature_frame) -> (lower_pln, upper_pln)`. Manifest zawiera wymagane przez runtime pola: `model_version`, `data_version`, `method`, `target_transform="log1p"`, `features`, `scope="Używane"`, `interval_method` i `interval_coverage` w `(0,1)`. Brak któregokolwiek z nich oznacza `503 model_not_ready`. Pola `schema_version`, `trained_at`, `training_rows`, `input_sha256`, `source_file`, `snapshot_date`, `row_count`, `column_count` i `code_commit` są opcjonalne; obecny runtime ich nie wymaga (#11).
 
-Pola cech w modelu muszą zachować nazwy ze słownika: `make`, `model`, `year`, `mileage_km`, `engine_cc`, `engine_power_km`, `fuel_type`, `gearbox`, `transmission`, `body_type`, `new_used`, `region`. `price_pln` jest celem uczenia; dla żądania R3 oddzielna nazwa `asking_price_pln` zapobiega pomyleniu ceny oferty z celem modelu. W obecnym skrypcie Ridge `city` nie jest predyktorem.
+Pola cech w modelu muszą zachować nazwy ze słownika i **kolejność `MODEL_FEATURES`** z `app/runtime.py`: `year`, `mileage_km`, `engine_cc`, `engine_power_km`, `make`, `model`, `fuel_type`, `gearbox`, `transmission`, `body_type`, `new_used`, `region`. Kolejność jest częścią kontraktu, bo runtime porównuje listę z manifestem. `price_pln` jest celem uczenia; dla żądania R3 oddzielna nazwa `asking_price_pln` zapobiega pomyleniu ceny oferty z celem modelu. W obecnym skrypcie Ridge `city` nie jest predyktorem.
 
 ## Diagram granic i przepływu danych
 
@@ -142,19 +146,21 @@ flowchart LR
     subgraph Web["Własny system — aplikacja webowa, PLANOWANA"]
         UI["React: formularz i wynik"]
         API["FastAPI: POST /predict"]
-        Validator["Walidator VehicleInput"]
-        Service["PredictionService"]
-        Loader["ModelBundleLoader"]
+        Validator["Walidator PredictRequest"]
+        Runtime["PredictionRuntime"]
         Estimator["Pipeline Ridge<br/>PLANOWANY"]
-        Interval["IntervalCalibrator + OfferComparator"]
+        Interval["IntervalCalibrator<br/>PLANOWANY"]
+        Comparator["Porównanie ceny<br/>w endpointcie"]
         UI -->|"JSON: parametry auta + asking_price_pln"| API
         API -->|"żądanie"| Validator
-        Validator -->|"poprawne cechy, new_used=Używane"| Service
-        Bundle -->|"artefakt modelu"| Loader
-        Loader -->|"zgodny pipeline"| Estimator
-        Service -->|"cechy modelu"| Estimator
+        Validator -->|"poprawne cechy, new_used=Używane"| Runtime
+        Bundle -->|"joblib + manifest"| Runtime
+        Runtime -->|"cechy modelu"| Estimator
         Estimator -->|"prognoza punktowa"| Interval
-        Interval -->|"przedział + etykieta R3"| API
+        Interval -->|"przedział"| Runtime
+        Runtime -->|"prognoza, przedział, wersje"| API
+        API -->|"asking_price_pln + przedział"| Comparator
+        Comparator -->|"etykieta R3"| API
         API -->|"JSON: prognoza albo błąd HTTP"| UI
     end
 
@@ -178,9 +184,10 @@ sequenceDiagram
     participant V as Walidator PredictRequest
     participant R as PredictionRuntime
     participant M as Pipeline Ridge + IntervalCalibrator
-    participant C as OfferComparator
+    participant C as Porównanie ceny (main.py)
     participant FS as Magazyn plików (wariant poza MVP)
 
+    Note over R: Runtime jest tworzony leniwie przy pierwszym żądaniu (get_prediction_runtime).
     Note over FS: Wariant hipotetyczny, nie istnieje w MVP.
     U->>UI: parametry auta + asking_price_pln
     UI->>API: POST /predict (JSON)
@@ -195,13 +202,14 @@ sequenceDiagram
     else dane poprawne
         V-->>API: poprawne cechy
         API->>API: ustaw new_used=Używane, oddziel asking_price_pln
-        API->>R: predict(vehicle_features)
-        R->>R: sprawdź manifest i artefakt modelu
+        API->>R: from_files(model_dir) — tylko pierwsze żądanie
+        R->>R: wczytaj joblib + manifest i sprawdź kontrakt
         alt model lub kalibrator niedostępny
             R-->>API: ModelNotReady
             API-->>UI: HTTP 503 model_not_ready
             UI-->>U: informacja o niedostępnej wycenie
         else model gotowy
+            API->>R: predict(vehicle_features)
             R->>M: predict(feature_frame)
             M-->>R: prognoza log1p(price_pln) + przedział
             R->>R: expm1 oraz kontrola finite i lower <= estimate <= upper
@@ -257,7 +265,7 @@ flowchart LR
         Runtime["PredictionRuntime<br/>ISTNIEJE — czeka na artefakt"]
         Pipeline["Pipeline Ridge<br/>PLANOWANY"]
         Calibrator["IntervalCalibrator<br/>PLANOWANY"]
-        Comparator["OfferComparator<br/>ISTNIEJE w endpointcie"]
+        Comparator["Porównanie ceny<br/>ISTNIEJE w endpointcie"]
         NoStore["Brak zapisu w MVP<br/>ADR-001"]
     end
 
@@ -277,7 +285,9 @@ flowchart LR
     Bundle -->|"joblib + manifest"| Runtime
     Runtime -->|"DataFrame cech"| Pipeline
     Pipeline -->|"prognoza punktowa w PLN"| Calibrator
-    Calibrator -->|"lower_pln, upper_pln"| Comparator
+    Calibrator -->|"lower_pln, upper_pln"| Runtime
+    Runtime -->|"prognoza, przedział, wersje"| API
+    API -->|"asking_price_pln + przedział"| Comparator
     Comparator -->|"below_estimate / around_estimate / above_estimate"| API
     API -->|"JSON: prognoza, przedział, etykieta, wersje"| UI
     UI -->|"cena, przedział i ocena oferty"| User
@@ -291,17 +301,19 @@ Formaty na strzałkach: CSV źródłowy ma 103 kolumny (`id`, `created_at`, `mak
 
 ### Zgłoszenia implementacyjne
 
-Zgłoszenia dla elementów przetwarzania i walidacji, których nie obejmują istniejące zadania A:
+Zgłoszenia dla elementów przetwarzania, modelu danych i walidacji. Pełny indeks z kryteriami odbioru znajduje się w [`docs/issues/data-model.md`](issues/data-model.md).
 
 | Issue | Zakres | Osoba |
 |---|---|---|
 | [#6](https://github.com/kollekka/Marabuty/issues/6) | Pełny przetworzony zbiór i wersjonowanie migawki | kollekka (Adrian Świeca) |
 | [#7](https://github.com/kollekka/Marabuty/issues/7) | Walidator danych treningowych | MrKabas (Kacper Stopa) |
-| [#8](https://github.com/kollekka/Marabuty/issues/8) | Metadane świeżości wyników | MrKabas (Kacper Stopa) |
+| [#8](https://github.com/kollekka/Marabuty/issues/8) | Metadane świeżości i wersjonowanie wyników | MrKabas (Kacper Stopa) |
+| [#9](https://github.com/kollekka/Marabuty/issues/9) | Przegląd UC-01 i kontraktu (F1–F6) | kollekka (Adrian Świeca) |
+| [#11](https://github.com/kollekka/Marabuty/issues/11) | Walidacja manifestu i plików wynikowych | MrKabas (Kacper Stopa) |
 
 Elementy już istniejące (`prepare_data.py`, `quality_checks.py`, `compare_methods.py`, `results/lab4/`, `app/main.py`, `app/schemas.py`, `app/runtime.py`, ADR-001) nie mają osobnych zgłoszeń. Trening, kalibrator, integracja API i formularz są już objęte zgłoszeniami #1–#5.
 
-Przegląd pracy A (B4): [#9](https://github.com/kollekka/Marabuty/issues/9).
+Przegląd pracy A (B4) i przegląd C5: [#9](https://github.com/kollekka/Marabuty/issues/9) oraz [`docs/reviews/uc-01.md`](reviews/uc-01.md). Zgłoszenia #10 i #12 zostały zamknięte jako duplikaty odpowiednio #8 i #9.
 
 ## Spójność z Lab 3–4 — przegląd A5
 
@@ -313,3 +325,15 @@ Przegląd pracy A (B4): [#9](https://github.com/kollekka/Marabuty/issues/9).
 - Obecne `quality_checks.py` sprawdza format `created_at`, nie ciągłość ani kolejność. Dla pojedynczego wejścia samochodu nie jest to potrzebne; ewentualna kontrola chronologii należy do walidacji danych treningowych.
 - R5 jest częściowo zaimplementowane: API zwraca 400/422 dla niepoprawnych żądań, ale bez zgodnego artefaktu poprawne żądanie kończy się 503, a nie prognozą. `quality_checks.py` nadal waliduje plik CSV, nie żądanie użytkownika.
 - Obsługa brakujących lub niepoprawnych danych użytkownika należy do walidatora API. Istniejące kontrole jakości dotyczą plików CSV i nie zastępują walidacji żądania.
+
+## Przegląd C5 — co poprawiono
+
+Pełny zapis przeglądu: [`docs/reviews/uc-01.md`](reviews/uc-01.md). Najważniejsze poprawki w tym dokumencie:
+
+- ujednolicono nazwy `PredictRequest` / `PredictResponse` / `PredictionRuntime`; usunięto `VehicleInput`, `PredictionService`, `ModelBundleLoader` i `OfferComparator` jako osobne klasy;
+- podano kanoniczną kolejność `MODEL_FEATURES` i wyjaśniono, że jest częścią kontraktu manifestu;
+- rozdzielono wymagane pola manifestu od opcjonalnych metadanych (`schema_version`, `trained_at`, typy cech nie są wymagane przez runtime);
+- opisano leniwe wczytywanie runtime przy pierwszym żądaniu, zgodnie z `app/main.py`;
+- dopisano, że zakresy walidacji dotyczą danych po czyszczeniu, a `Półautomatyczna` jest wartością spoza migawki;
+- pozostawiono jawne ścieżki `400 invalid_json`, `422 invalid_vehicle_input`, `503 model_not_ready` i `500 prediction_failed` w sekwencji;
+- potwierdzono, że UC-01 nie zapisuje wyniku i nie ma ścieżki błędu zapisu; ewentualny zapis wymaga osobnego kontraktu (ADR-001).
