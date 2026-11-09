@@ -21,8 +21,8 @@ Model obejmuje dwa rodzaje obiektów:
 | `EvaluationRun` | Jedno uruchomienie analizy porównawczej. | `run_id` | docelowo trwały | `results/runs/<data_version>/<run_id>/run.json` |
 | `EvaluationResult` | Wynik jednej metody w jednym uruchomieniu. | `(run_id, method)` | trwały | `results/lab4/comparison.csv` |
 | `TestObservation` | Jedna obserwacja testowa w jednym uruchomieniu. | `(run_id, row_index)` | trwały | `results/lab4/observations.csv` |
-| `PredictionRequest` | Jedno żądanie wyceny z `POST /predict`. | brak | nietrwały | JSON żądania HTTP |
-| `PriceEstimate` | Jedna odpowiedź wyceny z `POST /predict`. | brak | nietrwały | JSON odpowiedzi HTTP |
+| `PredictRequest` | Jedno żądanie wyceny z `POST /predict`. | brak | nietrwały | JSON żądania HTTP |
+| `PredictResponse` | Jedna odpowiedź wyceny z `POST /predict`. | brak | nietrwały | JSON odpowiedzi HTTP |
 
 ## Znaczenie pojedynczego rekordu
 
@@ -31,11 +31,11 @@ Model obejmuje dwa rodzaje obiektów:
 - **`DataSnapshot`** — jeden rekord opisuje jedną migawkę: `data_version`, plik źródłowy, SHA256, liczbę wierszy i kolumn oraz datę migawki. To metadana wersji, nie tabela z ogłoszeniami. W MVP nie ma osobnego pliku migawki-metadanych: `data_version` i data wynikają z nazwy pliku oraz README, a `input_sha256`, `source_file`, `snapshot_date`, `row_count` i `column_count` są opcjonalnymi polami manifestu opisanymi w [modelu fizycznym](data-model-physical.md).
 - **`ModelManifest`** — jeden rekord opisuje jedną wersję modelu: `model_version`, `data_version`, metodę, transformację celu, uporządkowaną listę cech, zakres `Używane` oraz metodę i pokrycie przedziału. Opcjonalnie może zawierać `trained_at`, `training_rows`, `input_sha256`, `source_file`, `snapshot_date`, `row_count`, `column_count` i `code_commit`.
 - **`ModelBundle`** — jeden artefakt joblib zawiera mapę z `pipeline` i `interval_calibrator`. Jest w relacji 1:1 z manifestem.
-- **`EvaluationRun`** — jedno uruchomienie `scripts/compare_methods.py`: `run_id`, `data_version`, `test_size`, `seed`, `alpha`, `code_commit`, `created_at` i ścieżki wyników.
+- **`EvaluationRun`** — jedno uruchomienie `scripts/compare_methods.py`: `run_id`, `data_version`, `method` (metoda główna), `methods` (lista porównywanych metod), `test_size`, `seed`, `alpha`, `code_commit`, `created_at` i ścieżki wyników.
 - **`EvaluationResult`** — jeden wiersz to wynik jednej metody (`baseline` albo `ridge`) w danym runie. Zawiera `mae_pln`, `rmse_pln`, `r2` i `mape_pct`.
 - **`TestObservation`** — jeden wiersz to jedna obserwacja testowa w danym runie: rzeczywista cena, prognozy, błędy bezwzględne i APE.
-- **`PredictionRequest`** — jedno żądanie API z parametrami auta i `asking_price_pln`; nie jest zapisywane.
-- **`PriceEstimate`** — jedna odpowiedź API z prognozą, przedziałem, etykietą R3, walutą, metodą i wersjami; nie jest zapisywana.
+- **`PredictRequest`** — jedno żądanie API z parametrami auta i `asking_price_pln`; nie jest zapisywane.
+- **`PredictResponse`** — jedna odpowiedź API z prognozą, przedziałem, etykietą R3, walutą, metodą i wersjami; nie jest zapisywana.
 
 ## Powiązania
 
@@ -49,7 +49,7 @@ Model obejmuje dwa rodzaje obiektów:
 | `EvaluationRun` → `EvaluationResult` | 1:N | Jeden run ma wynik dla każdej porównywanej metody. |
 | `EvaluationRun` → `TestObservation` | 1:N | Jeden run ma wiele obserwacji testowych. |
 | `ProcessedListing` → `TestObservation` | 1:N | Ten sam wiersz może być testowany w różnych runach. |
-| `ModelManifest` → `PredictionRequest` / `PriceEstimate` | 1:N | Żądanie i odpowiedź wskazują wersję modelu i danych, ale nie są utrwalane. |
+| `ModelManifest` → `PredictRequest` / `PredictResponse` | 1:N | Żądanie i odpowiedź wskazują wersję modelu i danych, ale nie są utrwalane. |
 
 ## Diagram ERD — model logiczny
 
@@ -106,6 +106,8 @@ erDiagram
     EVALUATION_RUN {
         string run_id PK
         string data_version FK
+        string method
+        string methods
         float test_size
         int seed
         float alpha
@@ -158,24 +160,35 @@ Uwagi do ERD:
   `year`, `mileage_km`, `engine_cc`, `engine_power_km`, `make`, `model`, `fuel_type`, `gearbox`, `transmission`, `body_type`, `new_used`, `region`.
 - Jednostki: `price_pln` i `asking_price_pln` w PLN, `mileage_km` w km, `engine_cc` w cm³, `engine_power_km` w KM, `year` jako rok produkcji.
 - `city` nie jest predyktorem w obecnym modelu. `generation` i flagi wyposażenia nie wchodzą do pierwszego modelu z powodu braków i ryzyka przeuczenia.
-- W migawce `gearbox` przyjmuje wartości `Manualna` i `Automatyczna`. API dopuszcza dodatkowo `Półautomatyczna` jako wartość forward-compatible; `OneHotEncoder(handle_unknown="ignore")` obsłuży kategorię spoza danych treningowych. Wartość tę trzeba potwierdzić lub usunąć z kontraktu przed produkcją.
+- W migawce `gearbox` przyjmuje wartości `Manualna` i `Automatyczna`. API dopuszcza dodatkowo `Półautomatyczna` jako wartość forward-compatible; `OneHotEncoder(handle_unknown="ignore")` obsłuży kategorię spoza danych treningowych. Model danych **nie dodaje** tej wartości do migawki. Decyzja o usunięciu z API albo pozostawieniu należy do #9 F4 i #11; C nie zmienia `app/schemas.py`.
 - `id` jest kluczem wiersza i nie jest cechą modelu. `created_at` pozostaje w danych, bo pozwala na podział czasowy w przyszłości, ale UC-01 dotyczy jednego samochodu i nie wymaga ciągłości dat.
+
+## Mapowanie nazw logicznych na implementację
+
+| Nazwa logiczna | Implementacja | Uwaga |
+|---|---|---|
+| `PredictRequest` | `app.schemas.PredictRequest` | To samo wejście UC-01; walidacja Pydantic. |
+| `PredictResponse` | `app.schemas.PredictResponse` | To samo wyjście UC-01; odpowiedź HTTP 200. |
+| `Listing` / `ProcessedListing` | `data/full-2026-11-01.csv`, `data/processed/sample-clean.csv` | Widoki logiczne na wiersze CSV, nie tabele bazy. |
+| `ModelManifest` / `ModelBundle` | `models/manifest.json`, `models/price-ridge.joblib` | Manifest opisuje artefakt; para jest 1:1. |
+| `EvaluationRun` | `results/runs/<data_version>/<run_id>/run.json` | Docelowy zapis; Lab 4 ma tylko CSV. |
+| `EvaluationResult` / `TestObservation` | `comparison.csv`, `observations.csv` | Wyniki Lab 4 i przyszłych runów. |
 
 ## Czego model nie zawiera
 
 - **`User`** — wymagania nie przewidują kont ani logowania.
 - **`Seller`** — dane sprzedawcy są w migawce, ale nie są predyktorami i nie są publikowane; nie ma wymagania wielu ogłoszeń jednego sprzedawcy.
 - **`PredictionHistory`** — MVP nie zapisuje historii wycen; to świadoma decyzja z ADR-001.
-- **`ForecastSeries` / `target_date`** — UC-01 nie jest prognozą szeregu czasowego; dane to jedna migawka, a wynik dotyczy jednego samochodu.
+- **`ForecastSeries` / `target_date`** — UC-01 nie jest prognozą szeregu czasowego; dane to jedna migawka, a wynik dotyczy jednego samochodu. Opcjonalny `forecast.csv` z modelu fizycznego jest eksportem pojedynczej wyceny, a nie serią czasową ani historią.
 - **Tabele bazy danych** — projekt nie ma bazy w MVP; model fizyczny to pliki.
 
 ## Ślad wymagań
 
 | Wymaganie | Element modelu |
 |---|---|
-| R1 — szybka orientacyjna cena | `PredictionRequest`, `PriceEstimate` |
-| R2 — przedział niepewności | `PriceEstimate.prediction_interval_pln`, `ModelManifest.interval_method`, `interval_coverage` |
-| R3 — ocena ceny oferty | `PriceEstimate.comparison` |
+| R1 — szybka orientacyjna cena | `PredictRequest`, `PredictResponse` |
+| R2 — przedział niepewności | `PredictResponse.prediction_interval_pln`, `ModelManifest.interval_method`, `interval_coverage` |
+| R3 — ocena ceny oferty | `PredictResponse.comparison` |
 | R5 — obsługa błędnych danych | walidacja `PredictRequest` w `app/schemas.py` |
 | R6 — jakość modelu | `EvaluationResult` i `TestObservation` |
 | R4 — ranking cech | poza obecnym modelem danych; zadanie implementacyjne, nie obiekt danych |
